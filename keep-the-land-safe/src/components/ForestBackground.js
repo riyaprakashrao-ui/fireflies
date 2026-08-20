@@ -1,4 +1,5 @@
 import React from 'react';
+import asset from '../asset';
 
 const ForestBackground = ({ style = {}, showPath = true, timeOfDay = 'day', showSmoke = false, showFire = false }) => {
   return (
@@ -10,7 +11,7 @@ const ForestBackground = ({ style = {}, showPath = true, timeOfDay = 'day', show
     }}>
       {/* Your custom background image */}
       <img
-        src="/background.png"
+        src={asset("/background.png")}
         alt="Forest background"
         style={{
           position: 'absolute',

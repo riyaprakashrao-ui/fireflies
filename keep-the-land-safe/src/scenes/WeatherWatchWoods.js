@@ -5,14 +5,8 @@ import PlayButton from '../components/PlayButton';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
-
-const Cloud = ({ width }) => (
-  <div style={{ position: 'relative', width, height: width * 0.45 }}>
-    <div style={{ position: 'absolute', bottom: 0, left: '10%', width: '80%', height: '60%', background: 'white', borderRadius: 999, opacity: 0.92 }} />
-    <div style={{ position: 'absolute', bottom: '30%', left: '20%', width: '45%', height: '70%', background: 'white', borderRadius: 999, opacity: 0.92 }} />
-    <div style={{ position: 'absolute', bottom: '20%', left: '50%', width: '38%', height: '55%', background: 'white', borderRadius: 999, opacity: 0.92 }} />
-  </div>
-);
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS, StackedBg } from '../preloadAssets';
 
 const IconSunny = ({ size = 72 }) => (
   <svg width={size} height={size} viewBox="0 0 72 72">
@@ -53,9 +47,9 @@ const IconRainy = ({ size = 72 }) => (
 );
 
 const FACT_ICONS = {
-  temp: '/weather-temperature.png',
-  humidity: '/weather-humidity.png',
-  precip: '/weather-precipitation.png',
+  temp: asset('/weather-temperature.png'),
+  humidity: asset('/weather-humidity.png'),
+  precip: asset('/weather-precipitation.png'),
 };
 
 const WeatherIcon = ({ src, Fallback, size = 72, fallbackSrc }) => {
@@ -79,7 +73,7 @@ const WEATHER = [
   {
     id: 'sunny',
     title: 'Sunny and Dry',
-    iconSrc: '/weather-sunny.png',
+    iconSrc: asset('/weather-sunny.png'),
     Fallback: IconSunny,
     risk: 'HIGH FIRE RISK WEATHER',
     high: true,
@@ -93,7 +87,7 @@ const WEATHER = [
   {
     id: 'windy',
     title: 'Windy',
-    iconSrc: '/weather-windy.png',
+    iconSrc: asset('/weather-windy.png'),
     Fallback: IconWindy,
     risk: 'HIGH FIRE RISK WEATHER',
     high: true,
@@ -107,7 +101,7 @@ const WEATHER = [
   {
     id: 'cloudy',
     title: 'Cloudy and Damp',
-    iconSrc: '/weather-cloudy.png',
+    iconSrc: asset('/weather-cloudy.png'),
     Fallback: IconCloudy,
     risk: 'LOW FIRE RISK WEATHER',
     high: false,
@@ -121,7 +115,7 @@ const WEATHER = [
   {
     id: 'rainy',
     title: 'Rainy',
-    iconSrc: '/weather-rainy.png',
+    iconSrc: asset('/weather-rainy.png'),
     Fallback: IconRainy,
     risk: 'LOW FIRE RISK WEATHER',
     high: false,
@@ -177,32 +171,32 @@ const CAUSES = [
     id: 'car',
     title: 'Park on Dry Grass',
     reveal: 'Hot cars can make dry grass catch fire.',
-    iconSrc: '/ignition-car.png',
-    iconOnSrc: '/ignition-car-fire.png',
+    iconSrc: asset('/ignition-car.png'),
+    iconOnSrc: asset('/ignition-car-fire.png'),
     Fallback: IconCar,
   },
   {
     id: 'tool',
     title: 'Metal Tool Spark',
     reveal: 'Metal tools can make sparks that start fires.',
-    iconSrc: '/ignition-tool.png',
-    iconOnSrc: '/ignition-tool-fire.png',
+    iconSrc: asset('/ignition-tool.png'),
+    iconOnSrc: asset('/ignition-tool-fire.png'),
     Fallback: IconTool,
   },
   {
     id: 'camp',
     title: 'Unattended Campfire',
     reveal: 'Leaving a campfire alone can start a wildfire.',
-    iconSrc: '/ignition-campfire.png',
-    iconOnSrc: '/ignition-campfire-spread.png',
+    iconSrc: asset('/ignition-campfire.png'),
+    iconOnSrc: asset('/ignition-campfire-spread.png'),
     Fallback: IconCamp,
   },
   {
     id: 'fireworks',
     title: 'Fireworks',
     reveal: 'Fireworks can make sparks that start fires.',
-    iconSrc: '/ignition-fireworks.png',
-    iconOnSrc: '/ignition-fireworks-fire.png',
+    iconSrc: asset('/ignition-fireworks.png'),
+    iconOnSrc: asset('/ignition-fireworks-fire.png'),
     Fallback: IconFireworks,
   },
 ];
@@ -250,7 +244,7 @@ const RiskMeter = ({ deg, onDegChange }) => {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      <img src="/dial.png" alt="" draggable={false} style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none' }} />
+      <img src={asset("/dial.png")} alt="" draggable={false} style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none' }} />
       <div
         style={{
           position: 'absolute',
@@ -316,7 +310,7 @@ const FireRiskQuiz = ({ onCorrect }) => {
         }}>
           <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: 22, color: '#1a1a1a' }}>Today's Weather Report</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <img src="/weather-thunderstorm.png" alt="" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
+            <img src={asset("/weather-thunderstorm.png")} alt="" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
             <div>
               <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: 34, color: '#1a1a1a', lineHeight: 1 }}>49° F</div>
               <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 17, fontWeight: 800, color: '#333' }}>Thunderstorm</div>
@@ -335,7 +329,7 @@ const FireRiskQuiz = ({ onCorrect }) => {
               <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 13, fontWeight: 800 }}>Wind 2mph</div>
               <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 13, fontWeight: 800 }}>Gusts 5mph</div>
             </div>
-            <img src="/weather-compass.png" alt="" style={{ width: 44, height: 44, objectFit: 'contain', flexShrink: 0 }} />
+            <img src={asset("/weather-compass.png")} alt="" style={{ width: 44, height: 44, objectFit: 'contain', flexShrink: 0 }} />
           </div>
         </div>
 
@@ -366,10 +360,10 @@ const FireRiskQuiz = ({ onCorrect }) => {
 
       <div style={{ position: 'absolute', bottom: 16, right: '3%', zIndex: 20 }}>
         <PlayButton
-          label="Next"
+          label="Submit"
           size="medium"
-          color="#4CAF50"
-          borderColor="#2E7D32"
+          color="#F819E7"
+          borderColor="#BB10AE"
           textColor="white"
           onClick={handleDone}
         />
@@ -395,7 +389,7 @@ const SunnyReport = () => (
   }}>
     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: 18, color: '#1a1a1a' }}>Today's Weather Report</div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <img src="/weather-sunny.png" alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+      <img src={asset("/weather-sunny.png")} alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
       <div>
         <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: 28, lineHeight: 1 }}>95° F</div>
         <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 15, fontWeight: 800 }}>Sunny</div>
@@ -414,7 +408,7 @@ const SunnyReport = () => (
         <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 13, fontWeight: 800 }}>2mph</div>
         <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 13, fontWeight: 800 }}>Gusts 5mph</div>
       </div>
-      <img src="/weather-compass.png" alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+      <img src={asset("/weather-compass.png")} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
     </div>
   </div>
 );
@@ -422,7 +416,7 @@ const SunnyReport = () => (
 const SceneOverlays = ({ windy, fireworks }) => (
   <>
     {windy && [0, 1, 2].map(i => (
-      <img key={i} src="/weather-windy.png" alt="" style={{
+      <img key={i} src={asset("/weather-windy.png")} alt="" style={{
         position: 'absolute', top: `${18 + i * 16}%`, left: `${12 + i * 22}%`, width: 90, zIndex: 6,
         animation: `cloudDrift ${2 + i * 0.6}s ease-in-out infinite alternate`,
         pointerEvents: 'none', opacity: 0.95,
@@ -435,7 +429,7 @@ const SceneOverlays = ({ windy, fireworks }) => (
     ].map((b, i) => (
       <img
         key={i}
-        src="/firework.png"
+        src={asset("/firework.png")}
         alt=""
         style={{
           position: 'absolute', top: b.top, left: b.left, width: b.w, height: 'auto',
@@ -470,7 +464,7 @@ const WildFire = ({ intensity, out }) => {
           opacity: out ? 0 : 1,
         }}>
           <div style={{ transformOrigin: 'center bottom', animation: out ? 'none' : `fireBreathe ${1.8 + i * 0.25}s ease-in-out ${f.delay} infinite` }}>
-            <img src="/campfire-flame.png" alt="" style={{
+            <img src={asset("/campfire-flame.png")} alt="" style={{
               width: '100%', height: 'auto', display: 'block', transformOrigin: 'center bottom',
               animation: out ? 'none' : `fireFlicker ${0.28 + i * 0.07}s ease-in-out infinite`,
               filter: 'drop-shadow(0 0 16px rgba(255,120,0,0.55))',
@@ -543,14 +537,14 @@ const PutOutGame = ({ onWin }) => {
         </div>
       )}
       <div style={{ position: 'absolute', bottom: 16, right: '3%', zIndex: 20 }}>
-        <PlayButton label="Next" size="medium" color="#F819E7" borderColor="#BB10AE" textColor="white" onClick={handleTest} />
+        <PlayButton label="Submit" size="medium" color="#F819E7" borderColor="#BB10AE" textColor="white" onClick={handleTest} />
       </div>
     </>
   );
 };
 
 const Campfire = () => {
-  const [flame, setFlame] = useState('/campfire-flame.png');
+  const [flame, setFlame] = useState(asset('/campfire-flame.png'));
   const [showLogs, setShowLogs] = useState(true);
   return (
     <div style={{
@@ -559,7 +553,7 @@ const Campfire = () => {
     }}>
       {showLogs && (
         <img
-          src="/campfire-logs.png"
+          src={asset("/campfire-logs.png")}
           alt=""
           onError={() => setShowLogs(false)}
           style={{
@@ -575,7 +569,7 @@ const Campfire = () => {
           <img
             src={flame}
             alt=""
-            onError={() => { if (flame !== '/fire.png') setFlame('/fire.png'); }}
+            onError={() => { if (flame !== asset('/fire.png')) setFlame(asset('/fire.png')); }}
             style={{
               display: 'block', width: 112, height: 'auto',
               transformOrigin: 'center bottom',
@@ -604,34 +598,19 @@ const Campfire = () => {
 };
 
 const woodsBgFor = (phase) => {
-  if (phase === 'cards' || phase === 'ignition' || phase === 'riskQuiz') return '/woods-cards-bg.png';
-  return '/frame2background.png';
+  if (phase === 'cards' || phase === 'ignition' || phase === 'riskQuiz') return asset('/woods-cards-bg.png');
+  return asset('/frame2background.png');
 };
 
-const WoodsBg = ({ src }) => {
-  const [img, setImg] = useState(src);
-  useEffect(() => { setImg(src); }, [src]);
-  return (
+const WoodsBg = ({ src }) => (
     <>
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #87CEEB 0%, #7BC67E 55%, #3d7a1a 100%)', zIndex: 0 }} />
-      <img
-        src={img}
-        alt=""
-        onError={() => { if (img !== '/frame2background.png') setImg('/frame2background.png'); }}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }}
+      <StackedBg
+        src={src}
+        sources={[asset('/woods-cards-bg.png'), asset('/frame2background.png')]}
       />
-      <div style={{ position: 'absolute', top: '3%', left: '4%', zIndex: 2, animation: 'cloudDrift 4s ease-in-out infinite alternate', pointerEvents: 'none' }}>
-        <Cloud width={120} />
-      </div>
-      <div style={{ position: 'absolute', top: '1%', left: '45%', zIndex: 2, animation: 'cloudDrift 6s ease-in-out infinite alternate-reverse', pointerEvents: 'none' }}>
-        <Cloud width={100} />
-      </div>
-      <div style={{ position: 'absolute', top: '4%', right: '8%', zIndex: 2, animation: 'cloudDrift 5s ease-in-out infinite alternate', pointerEvents: 'none' }}>
-        <Cloud width={130} />
-      </div>
     </>
   );
-};
 
 const WeatherWatchWoods = ({ navigateTo, completeGame }) => {
   const [phase, setPhase] = useState('intro');
@@ -676,6 +655,7 @@ const WeatherWatchWoods = ({ navigateTo, completeGame }) => {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.WOODS]} />
       <WoodsBg src={woodsBgFor(phase)} />
       <BackButton onClick={goBack} />
       <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />

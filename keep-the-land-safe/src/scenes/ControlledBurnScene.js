@@ -5,6 +5,8 @@ import BackButton from '../components/BackButton';
 import HomeButton from '../components/HomeButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS, StackedBg } from '../preloadAssets';
 
 const INTRO_TEXTS = [
   "Here we have lots of dry plants. This can help a wildfire spread. Wildfire safety professionals carefully plan a controlled fire to get rid of the dry plants and make room for healthy ones to grow.",
@@ -95,11 +97,10 @@ const ControlledBurnScene = ({ navigateTo, completeLevel }) => {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {/* Background — dry plants for intro/select/burning, clean field for success */}
-      <img
-        src={phase === 'success' ? '/native-plants-field.png' : '/dryplantbg.png'}
-        alt=""
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, transition: 'opacity 1s ease' }}
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.CONTROLLED_BURN]} />
+      <StackedBg
+        src={phase === 'success' ? asset('/native-plants-field.png') : asset('/dryplantbg.png')}
+        sources={[asset('/dryplantbg.png'), asset('/native-plants-field.png')]}
       />
 
       {/* Back button — previous phase */}
@@ -211,7 +212,7 @@ const ControlledBurnScene = ({ navigateTo, completeLevel }) => {
             {firePositions.map((pos, i) => (
               <img
                 key={i}
-                src="/campfire-flame.png"
+                src={asset("/campfire-flame.png")}
                 alt=""
                 style={{
                   position: 'absolute',

@@ -4,6 +4,8 @@ import DialogueBox from '../components/DialogueBox';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -24,8 +26,9 @@ const FinalCongratsScreen = ({ navigateTo }) => {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <img src="/openingscenebg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
-      <img src="/firestationasset.png" alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.FINAL_CONGRATS]} />
+      <img src={asset("/openingscenebg.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
+      <img src={asset("/firestationasset.png")} alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
 
       <div style={{ position: 'absolute', top: '4%', left: '3%', zIndex: 2, animation: 'cloudDrift 4s ease-in-out infinite alternate', pointerEvents: 'none' }}>
         <Cloud width={120} />
@@ -47,7 +50,7 @@ const FinalCongratsScreen = ({ navigateTo }) => {
         <div style={{ marginBottom: 30 }}>
           <DialogueBox
             text={LINES[idx]}
-            image={idx >= 1 ? '/jr-badge.png' : null}
+            image={idx >= 1 ? asset('/jr-badge.png') : null}
             imageSize={120}
             onNext={() => {
               if (idx < LINES.length - 1) setIdx(idx + 1);

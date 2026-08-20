@@ -1,4 +1,5 @@
 import React from 'react';
+import asset from '../asset';
 
 const FirefighterCharacter = ({ size = 180, speaking = false, waving = false, style = {}, expression = 'happy' }) => {
 
@@ -11,8 +12,10 @@ const FirefighterCharacter = ({ size = 180, speaking = false, waving = false, st
       ...style,
     }}>
       <img
-        src="/firefighter.png"
+        src={asset("/firefighter.png")}
         alt="Blaze the Firefighter"
+        fetchPriority="high"
+        decoding="async"
         style={{
           width: '100%',
           height: '100%',

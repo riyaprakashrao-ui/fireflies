@@ -5,6 +5,8 @@ import BackButton from '../components/BackButton';
 import HomeButton from '../components/HomeButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const MIN_WIDTH = 120;
 const MIN_HEIGHT = 200;
@@ -92,8 +94,9 @@ const FirebreakScene = ({ navigateTo, completeLevel }) => {
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
 
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.FIREBREAK]} />
       {/* Background */}
-      <img src="/firebreak-bg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+      <img src={asset("/firebreak-bg.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
 
       {/* Back button — goes to previous phase */}
       <BackButton onClick={() => {
@@ -171,7 +174,7 @@ const FirebreakScene = ({ navigateTo, completeLevel }) => {
                 overflow: 'hidden',
                 animation: 'fadeIn 1s ease',
               }}>
-                <img src="/firebreakrect.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
+                <img src={asset("/firebreakrect.png")} alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
               </div>
             )}
           </div>
@@ -229,7 +232,7 @@ const FirebreakScene = ({ navigateTo, completeLevel }) => {
             width: `${box.width}%`, height: `${box.height}%`,
             overflow: 'hidden', zIndex: 5,
           }}>
-            <img src="/firebreakrect.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
+            <img src={asset("/firebreakrect.png")} alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
           </div>
 
           {/* Blaze + success */}

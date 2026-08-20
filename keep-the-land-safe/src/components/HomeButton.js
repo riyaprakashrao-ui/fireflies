@@ -1,4 +1,5 @@
 import React from 'react';
+import asset from '../asset';
 
 const HomeButton = ({ onClick }) => (
   <button
@@ -16,7 +17,7 @@ const HomeButton = ({ onClick }) => (
     onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
     onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
   >
-    <img src="/home.png" alt="Home" style={{ width: 48, height: 48, objectFit: 'contain' }} />
+    <img src={asset("/home.png")} alt="Home" style={{ width: 48, height: 48, objectFit: 'contain' }} />
   </button>
 );
 

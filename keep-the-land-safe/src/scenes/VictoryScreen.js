@@ -5,12 +5,13 @@ import PlayButton from '../components/PlayButton';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
 
 const ACHIEVEMENTS = [
-  { id: SCENES.FIREBREAK,       title: 'Firebreak Builder',   image: '/assets/Firebreak.png',    scale: '65%', desc: 'Cleared dry grass to stop fire spreading!' },
-  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plant Expert', image: '/assets/NativePlant.png',  scale: '90%', desc: 'Planted fire-resistant California natives!' },
-  { id: SCENES.GOATS,           title: 'Goat Wrangler',       image: '/assets/Goat.png',         scale: '90%', desc: 'Used goats to clear dangerous dry grass!' },
-  { id: SCENES.CONTROLLED_BURN, title: 'Fire Safety Pro',     image: '/assets/Fire.png',         scale: '55%', desc: 'Learned how professionals do controlled burns!' },
+  { id: SCENES.FIREBREAK,       title: 'Firebreak Builder',   image: asset('/assets/Firebreak.png'),    scale: '65%', desc: 'Cleared dry grass to stop fire spreading!' },
+  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plant Expert', image: asset('/assets/NativePlant.png'),  scale: '90%', desc: 'Planted fire-resistant California natives!' },
+  { id: SCENES.GOATS,           title: 'Goat Wrangler',       image: asset('/assets/Goat.png'),         scale: '90%', desc: 'Used goats to clear dangerous dry grass!' },
+  { id: SCENES.CONTROLLED_BURN, title: 'Fire Safety Pro',     image: asset('/assets/Fire.png'),         scale: '55%', desc: 'Learned how professionals do controlled burns!' },
 ];
 
 const FACTS = [

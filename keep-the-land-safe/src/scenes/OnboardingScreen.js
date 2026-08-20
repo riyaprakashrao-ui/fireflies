@@ -4,6 +4,8 @@ import DialogueBox from '../components/DialogueBox';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -16,8 +18,8 @@ const Cloud = ({ width }) => (
 const SLIDES = [
   { title: "Your Mission", text: "You'll help firefighters, learn about wildfires, and help families get ready. The game is set up into 5 different mini-games to help prepare you to be safe!", image: null },
   { title: "A Quick Safety Note", text: "This is a game. In real life, always ask an adult for help and never play with fire.", image: null },
-  { title: "How to Navigate", text: "This is the Map button. It takes you back to the main town map.", image: '/mapbutton.png' },
-  { title: "How to Navigate", text: "This is the Home button. It takes you back to the menu of the mini-game you're playing.", image: '/home.png' },
+  { title: "How to Navigate", text: "This is the Map button. It takes you back to the main town map.", image: asset('/mapbutton.png') },
+  { title: "How to Navigate", text: "This is the Home button. It takes you back to the menu of the mini-game you're playing.", image: asset('/home.png') },
   { title: "How to Navigate", text: "This is the Back button. It takes you to the previous screen.", image: 'back' },
   { title: "How to Navigate", text: "This is the Next button. It moves you forward to the next screen.", image: 'next' },
 ];
@@ -27,11 +29,12 @@ const OnboardingScreen = ({ navigateTo, hasSeenOnboarding, completeOnboarding })
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.ONBOARDING]} />
       {/* Background */}
-      <img src="/openingscenebg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
+      <img src={asset("/openingscenebg.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
 
       {/* Fire station */}
-      <img src="/firestationasset.png" alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
+      <img src={asset("/firestationasset.png")} alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
 
       {/* Animated clouds */}
       <div style={{ position: 'absolute', top: '4%', left: '3%', zIndex: 2, animation: 'cloudDrift 4s ease-in-out infinite alternate', pointerEvents: 'none' }}>

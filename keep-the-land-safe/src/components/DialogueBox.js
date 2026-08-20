@@ -19,7 +19,7 @@ const DialogueBox = ({ text, onNext, onBack, showNext=true, style={}, characterN
   };
 
   return (
-    <div onClick={handleClick} style={{ background:'white', border:'3px solid #1F93BA', borderRadius:16, padding: compact ? '12px 16px' : '20px 26px', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', cursor:'pointer', position:'relative', animation:'fadeIn 0.6s ease', ...style }}>
+    <div onClick={handleClick} style={{ background:'white', border:'3px solid #1F93BA', borderRadius:16, padding: compact ? '12px 16px' : '20px 26px', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', cursor:'pointer', position:'relative', animation:'fadeInSoft 0.18s ease', ...style }}>
       {showName && <div style={{ position:'absolute', top:-17, left:18, background:'#1F93BA', color:'white', fontFamily:"'Fredoka One',cursive", fontSize:13, padding:'3px 12px', borderRadius:10, boxShadow:'0 2px 6px rgba(0,0,0,0.2)' }}>
         {characterName}
       </div>}

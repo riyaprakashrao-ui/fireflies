@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
 import BackButton from '../components/BackButton';
 import HowToButton from '../components/HowToButton';
 import { SCENES, GAME_ORDER } from '../scenes';
+import asset from '../asset';
+import { preloadScene } from '../preloadAssets';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -41,9 +43,14 @@ const MainMapScreen = ({ navigateTo, completedGames }) => {
     return true; // TEMP: all unlocked for development
   };
 
+  useEffect(() => {
+    if (nextGame) preloadScene(nextGame);
+    GAME_ORDER.forEach((id) => preloadScene(id));
+  }, [nextGame]);
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <img src="/mapwithsigns.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 60%', zIndex: 0 }} />
+      <img src={asset("/mapwithsigns.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 60%', zIndex: 0 }} />
 
       {/* Animated clouds */}
       <div style={{ position: 'absolute', top: '3%', left: '4%', zIndex: 2, animation: 'cloudDrift 4s ease-in-out infinite alternate', pointerEvents: 'none' }}>
@@ -73,6 +80,7 @@ const MainMapScreen = ({ navigateTo, completedGames }) => {
           <div
             key={loc.id}
             onClick={() => { if (unlocked) navigateTo(loc.id); }}
+            onTouchStart={() => preloadScene(loc.id)}
             style={{
               position: 'absolute', left: loc.x, top: loc.y,
               transform: 'translate(-50%, -50%)',
@@ -82,7 +90,10 @@ const MainMapScreen = ({ navigateTo, completedGames }) => {
               borderRadius: 8,
               background: 'transparent',
             }}
-            onMouseEnter={e => { if (unlocked) e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)'; }}
+            onMouseEnter={e => {
+              preloadScene(loc.id);
+              if (unlocked) e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
+            }}
             onMouseLeave={e => e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)'}
           />
         );

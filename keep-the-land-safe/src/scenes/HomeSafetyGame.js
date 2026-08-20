@@ -5,18 +5,20 @@ import PlayButton from '../components/PlayButton';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const BG = {
-  house: '/house.png',
-  classA: '/roof-class-a.png',
-  leaves: '/roof-leaves.png',
-  hole: '/hole.png',
-  vent: '/vent.png',
-  ventHole: '/vent-hole.png',
-  ventLeaves: '/vent-leaves.png',
-  fenceBg: '/cleanfence-bg.png',
-  fenceWood: '/fence-wood.png',
-  fenceSafe: '/fence-safe.png',
+  house: asset('/house.png'),
+  classA: asset('/roof-class-a.png'),
+  leaves: asset('/roof-leaves.png'),
+  hole: asset('/hole.png'),
+  vent: asset('/vent.png'),
+  ventHole: asset('/vent-hole.png'),
+  ventLeaves: asset('/vent-leaves.png'),
+  fenceBg: asset('/cleanfence-bg.png'),
+  fenceWood: asset('/fence-wood.png'),
+  fenceSafe: asset('/fence-safe.png'),
 };
 
 const Cloud = ({ width }) => (
@@ -193,17 +195,19 @@ const STEPS = [
   },
 ];
 
-const ImageBg = ({ src, style = {} }) => {
+const ImageBg = ({ src, sources = [] }) => {
   const [ok, setOk] = useState(true);
   useEffect(() => { setOk(true); }, [src]);
+  const list = [...new Set([src, ...sources].filter(Boolean))];
   return (
     <>
       <div style={{ position: 'absolute', inset: 0, background: '#8BE4FF', zIndex: 0 }} />
-      {ok && src && (
+      {ok && list.map((url) => (
         <img
-          src={src}
+          key={url}
+          src={url}
           alt=""
-          onError={() => setOk(false)}
+          onError={() => { if (url === src) setOk(false); }}
           style={{
             position: 'absolute',
             inset: 0,
@@ -212,10 +216,11 @@ const ImageBg = ({ src, style = {} }) => {
             objectFit: 'cover',
             objectPosition: 'center bottom',
             zIndex: 0,
-            ...style,
+            opacity: url === src ? 1 : 0,
+            pointerEvents: 'none',
           }}
         />
-      )}
+      ))}
     </>
   );
 };
@@ -389,7 +394,8 @@ const HomeSafetyGame = ({ navigateTo, completeGame }) => {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <ImageBg src={BG[current.bg]} />
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.HOME_SAFETY]} />
+      <ImageBg src={BG[current.bg]} sources={Object.values(BG)} />
       {current.bg !== 'vent' && <SkyClouds />}
       {current.showHole && <Overlay src={BG.hole} popping={fixing} gone={fixed} shiftX="5%" origin="18.7% 48.9%" />}
       {current.showVentHole && <Overlay src={BG.ventHole} popping={fixing} gone={fixed} origin="50.1% 66.8%" />}
@@ -429,44 +435,72 @@ const HomeSafetyGame = ({ navigateTo, completeGame }) => {
       )}
 
       {showBlaze && (
-        <>
-          <div style={{
-            position: 'absolute',
-            top: 72,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 25,
-            width: '70%',
-            maxWidth: 860,
-          }}>
-            <DialogueBox
-              text={current.text}
-              onNext={goNext}
-              showName={false}
-              style={{ width: '100%', padding: '12px 28px', borderRadius: 28 }}
-            />
-          </div>
-          <div style={{ position: 'absolute', bottom: '2%', left: '1%', zIndex: 25 }}>
-            <FirefighterCharacter size={130} />
-          </div>
-        </>
+        <div style={{
+          position: 'absolute',
+          bottom: '3%',
+          left: '3%',
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 14,
+          zIndex: 25,
+          maxWidth: '64%',
+        }}>
+          <FirefighterCharacter size={130} />
+          <DialogueBox
+            text={current.text}
+            onNext={goNext}
+            showName={false}
+            compact
+            style={{ maxWidth: 440, marginBottom: 8 }}
+          />
+        </div>
       )}
 
       {current.type === 'quiz' && (
         <>
-          <div style={{ position: 'absolute', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '70%', maxWidth: 560 }}>
-            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '12px 32px', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
-              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+          <div style={{
+            position: 'absolute',
+            top: 86,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            width: '56%',
+            maxWidth: 420,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <div style={{
+              background: 'white',
+              border: '3px solid #1F93BA',
+              borderRadius: 28,
+              padding: '8px 22px',
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              width: '100%',
+            }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 20, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
                 {current.question}
               </p>
             </div>
+            {guess === 'yes' && (
+              <div style={{
+                background: 'white',
+                border: '3px solid #E53935',
+                borderRadius: 20,
+                padding: '10px 22px',
+                fontFamily: "'Nunito',sans-serif",
+                fontSize: 18,
+                fontWeight: 800,
+                boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+                animation: 'popIn 0.35s ease',
+                textAlign: 'center',
+              }}>
+                {current.hint}
+              </div>
+            )}
           </div>
-
-          {guess === 'yes' && (
-            <div style={{ position: 'absolute', top: '16%', left: '50%', transform: 'translateX(-50%)', zIndex: 25, background: 'white', border: '3px solid #E53935', borderRadius: 20, padding: '12px 24px', fontFamily: "'Nunito',sans-serif", fontSize: 18, fontWeight: 800, boxShadow: '0 6px 18px rgba(0,0,0,0.18)', animation: 'popIn 0.35s ease' }}>
-              {current.hint}
-            </div>
-          )}
 
           <div style={{ position: 'absolute', bottom: '2%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 28, zIndex: 20 }}>
             <PlayButton

@@ -4,27 +4,29 @@ import DialogueBox from '../components/DialogueBox';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const GO_BAG_ICONS = [
-  { name: 'Photos', image: '/photos.png' },
-  { name: 'Pets', image: '/pets.png' },
-  { name: 'Papers', image: '/documentsicon.png' },
-  { name: 'First-Aid', image: '/firstaid.png' },
-  { name: 'Water', image: '/water.png' },
-  { name: 'Prescriptions', image: '/prescriptions.png' },
-  { name: 'Flashlight', image: '/flashlight.png' },
-  { name: 'Precious Items', image: '/preciousitems.png' },
-  { name: 'Battery & Chargers', image: '/batteryandcharger.png' },
-  { name: 'Cash', image: '/cash.png' },
+  { name: 'Photos', image: asset('/photos.png') },
+  { name: 'Pets', image: asset('/pets.png') },
+  { name: 'Papers', image: asset('/documentsicon.png') },
+  { name: 'First-Aid', image: asset('/firstaid.png') },
+  { name: 'Water', image: asset('/water.png') },
+  { name: 'Prescriptions', image: asset('/prescriptions.png') },
+  { name: 'Flashlight', image: asset('/flashlight.png') },
+  { name: 'Precious Items', image: asset('/preciousitems.png') },
+  { name: 'Battery & Chargers', image: asset('/batteryandcharger.png') },
+  { name: 'Cash', image: asset('/cash.png') },
 ];
 
 // Items for the drag game — some correct, some wrong
 const GAME_ITEMS = [
-  { id: 'water', name: 'Water Bottle', image: '/waterbottle.png', correct: true },
-  { id: 'docs', name: 'Documents', image: '/documents.png', correct: true },
-  { id: 'medicine', name: 'Medicine', image: '/medicine.png', correct: true },
-  { id: 'soccer', name: 'Soccer Ball', image: '/soccerball.png', correct: false },
-  { id: 'doll', name: 'Doll', image: '/doll.png', correct: false },
+  { id: 'water', name: 'Water Bottle', image: asset('/waterbottle.png'), correct: true },
+  { id: 'docs', name: 'Documents', image: asset('/documents.png'), correct: true },
+  { id: 'medicine', name: 'Medicine', image: asset('/medicine.png'), correct: true },
+  { id: 'soccer', name: 'Soccer Ball', image: asset('/soccerball.png'), correct: false },
+  { id: 'doll', name: 'Doll', image: asset('/doll.png'), correct: false },
 ];
 
 const INTRO_SLIDES = [
@@ -94,10 +96,11 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.TOWN_HALL]} />
       {/* ═══ INTRO ═══ */}
       {phase === 'intro' && (
         <>
-          <img src="/reccenter.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <img src={asset("/reccenter.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', zIndex: 1 }} />
           <BackButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
           <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
@@ -149,7 +152,7 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
       {/* ═══ FAMILY ═══ */}
       {phase === 'family' && (
         <>
-          <img src="/reccenter.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <img src={asset("/reccenter.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)', zIndex: 1 }} />
           <BackButton onClick={() => setPhase('grid')} />
           <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
@@ -164,9 +167,9 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
 
           {/* Family */}
           <div style={{ position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 16, zIndex: 10, alignItems: 'flex-end' }}>
-            <img src="/family1.png" alt="" style={{ height: 220, objectFit: 'contain' }} />
-            <img src="/family2.png" alt="" style={{ height: 200, objectFit: 'contain' }} />
-            <img src="/family3.png" alt="" style={{ height: 160, objectFit: 'contain' }} />
+            <img src={asset("/family1.png")} alt="" style={{ height: 220, objectFit: 'contain' }} />
+            <img src={asset("/family2.png")} alt="" style={{ height: 200, objectFit: 'contain' }} />
+            <img src={asset("/family3.png")} alt="" style={{ height: 160, objectFit: 'contain' }} />
           </div>
 
           {/* Start packing button */}
@@ -179,7 +182,7 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
       {/* ═══ INSTRUCTIONS ═══ */}
       {phase === 'instructions' && (
         <>
-          <img src="/reccenter.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <img src={asset("/reccenter.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', zIndex: 1 }} />
           <BackButton onClick={() => setPhase('family')} />
           <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
@@ -199,12 +202,12 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
       {/* ═══ GAME — Drag & Drop ═══ */}
       {phase === 'game' && (
         <>
-          <img src="/reccenter.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <img src={asset("/reccenter.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
           <BackButton onClick={() => setPhase('instructions')} />
           <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
 
           {/* Backpack on the left */}
-          <img src="/backpack.png" alt="" style={{ position: 'absolute', bottom: '8%', left: '5%', width: 140, objectFit: 'contain', zIndex: 5 }} />
+          <img src={asset("/backpack.png")} alt="" style={{ position: 'absolute', bottom: '8%', left: '5%', width: 140, objectFit: 'contain', zIndex: 5 }} />
 
           {/* Items scattered in the middle */}
           <div style={{ position: 'absolute', bottom: '10%', left: '22%', display: 'flex', gap: 20, flexWrap: 'wrap', maxWidth: '40%', zIndex: 10, alignItems: 'flex-end' }}>
@@ -266,7 +269,7 @@ const TownHallGame = ({ navigateTo, completeGame }) => {
       {/* ═══ SUCCESS ═══ */}
       {phase === 'success' && (
         <>
-          <img src="/reccenter.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+          <img src={asset("/reccenter.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', zIndex: 1 }} />
 
           <div style={{ position: 'absolute', bottom: '5%', left: '3%', display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>

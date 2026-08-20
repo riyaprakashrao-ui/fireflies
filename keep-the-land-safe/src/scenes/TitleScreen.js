@@ -5,6 +5,8 @@ import PlayButton from '../components/PlayButton';
 import MapButton from '../components/MapButton';
 import HowToButton from '../components/HowToButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -16,12 +18,13 @@ const Cloud = ({ width }) => (
 
 const TitleScreen = ({ navigateTo, hasSeenOnboarding }) => (
   <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-    <img src="/openingscenebg.png" alt="" style={{
+    <HiddenPrefetch urls={[...SCENE_ASSETS[SCENES.TITLE], ...SCENE_ASSETS[SCENES.MAIN_MAP], ...SCENE_ASSETS[SCENES.ONBOARDING]]} />
+    <img src={asset("/openingscenebg.png")} alt="" style={{
       position: 'absolute', inset: 0, width: '100%', height: '100%',
       objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0,
     }} />
 
-    <img src="/firestationasset.png" alt="" style={{
+    <img src={asset("/firestationasset.png")} alt="" style={{
       position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)',
       width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1,
     }} />

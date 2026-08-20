@@ -6,12 +6,14 @@ import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import PlayButton from '../components/PlayButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS, preloadScene } from '../preloadAssets';
 
 const LEVELS = [
-  { id: SCENES.FIREBREAK,       title: 'Firebreaks',      image: '/assets/Firebreak.png',    scale: '65%' },
-  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plants',   image: '/assets/NativePlant.png',  scale: '90%' },
-  { id: SCENES.GOATS,           title: 'Goats',           image: '/assets/Goat.png',         scale: '90%' },
-  { id: SCENES.CONTROLLED_BURN, title: 'Controlled Burn', image: '/assets/Fire.png',         scale: '55%' },
+  { id: SCENES.FIREBREAK,       title: 'Firebreaks',      image: asset('/assets/Firebreak.png'),    scale: '65%' },
+  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plants',   image: asset('/assets/NativePlant.png'),  scale: '90%' },
+  { id: SCENES.GOATS,           title: 'Goats',           image: asset('/assets/Goat.png'),         scale: '90%' },
+  { id: SCENES.CONTROLLED_BURN, title: 'Controlled Burn', image: asset('/assets/Fire.png'),         scale: '55%' },
 ];
 
 const INTRO_FIRST = [
@@ -42,9 +44,10 @@ const WorldMapScreen = ({ navigateTo, completedLevels, completeGame }) => {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <HiddenPrefetch urls={[...SCENE_ASSETS[SCENES.FIELD_MAP], ...SCENE_ASSETS[SCENES.FIREBREAK], ...SCENE_ASSETS[SCENES.NATIVE_PLANTS], ...SCENE_ASSETS[SCENES.GOATS], ...SCENE_ASSETS[SCENES.CONTROLLED_BURN]]} />
       {wrapUp ? (
         <img
-          src="/frame2background.png"
+          src={asset("/frame2background.png")}
           alt=""
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }}
         />
@@ -92,7 +95,8 @@ const WorldMapScreen = ({ navigateTo, completedLevels, completeGame }) => {
             <div
               key={level.id}
               onClick={() => navigateTo(level.id)}
-              onMouseEnter={() => setHovered(level.id)}
+              onMouseEnter={() => { setHovered(level.id); preloadScene(level.id); }}
+              onTouchStart={() => preloadScene(level.id)}
               onMouseLeave={() => setHovered(null)}
               style={{
                 width: 265,

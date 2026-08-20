@@ -5,25 +5,27 @@ import BackButton from '../components/BackButton';
 import HomeButton from '../components/HomeButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS, StackedBg } from '../preloadAssets';
 
 const INTRO_TEXTS = [
   "These plants are not from this area, so they burn easily. It's important to replant native plants that are more resistant to fires.",
 ];
 
 const PLANTS = [
-  { id: 'cherry', name: 'Catalina Cherry Tree', image: '/cherry-tree.png', dropSize: 120,
+  { id: 'cherry', name: 'Catalina Cherry Tree', image: asset('/cherry-tree.png'), dropSize: 120,
     facts: [
       'Thick, waxy leaves that hold water',
       "Doesn't drop a lot of dry leaves/needles like pine trees do",
       'No oily sap or wood (unlike trees like eucalyptus, which burn easily)',
     ]},
-  { id: 'fuchsia', name: 'California Fuchsia', image: '/fushcia.png', dropSize: 80,
+  { id: 'fuchsia', name: 'California Fuchsia', image: asset('/fushcia.png'), dropSize: 80,
     facts: [
       'Leaves stay moist, even in summer',
       'Grows low and spread out, not tall and woody',
       'No oily parts that catch fire easily',
     ]},
-  { id: 'poppy', name: 'California Poppy', image: '/poppy.png', dropSize: 80,
+  { id: 'poppy', name: 'California Poppy', image: asset('/poppy.png'), dropSize: 80,
     facts: [
       'Small and low to the ground — no tall dry parts for fire to climb',
       'Juicy, watery leaves and stems',
@@ -75,11 +77,11 @@ const NativePlantsScene = ({ navigateTo, completeLevel }) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* Background — changes per phase */}
-      <img
-        src={phase === 'intro' ? '/firebreak-bg.png' : '/native-plants-field.png'}
-        alt=""
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.NATIVE_PLANTS]} />
+      <StackedBg
+        src={phase === 'intro' ? asset('/firebreak-bg.png') : asset('/native-plants-field.png')}
+        sources={[asset('/firebreak-bg.png'), asset('/native-plants-field.png')]}
+        objectPosition="center"
       />
 
       {/* Back button — goes to previous phase */}

@@ -2,6 +2,7 @@ import React from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import BackButton from '../components/BackButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -17,7 +18,7 @@ const IntroScene = ({ navigateTo }) => {
 
       {/* Background */}
       <img
-        src={`/frame2background.png`}
+        src={asset(`/frame2background.png`)}
         alt=""
         style={{
           position: 'absolute', inset: 0,

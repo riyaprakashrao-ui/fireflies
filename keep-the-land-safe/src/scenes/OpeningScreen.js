@@ -1,6 +1,7 @@
 import React from 'react';
 import PlayButton from '../components/PlayButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
 
 const Cloud = ({ width }) => (
   <div style={{ position: 'relative', width, height: width * 0.45 }}>
@@ -16,7 +17,7 @@ const OpeningScreen = ({ navigateTo }) => {
 
       {/* Background image — show more land (bottom-centered) */}
       <img
-        src={`/Opening Screen.png`}
+        src={asset(`/Opening Screen.png`)}
         alt=""
         style={{
           position: 'absolute', inset: 0,
@@ -62,7 +63,7 @@ const OpeningScreen = ({ navigateTo }) => {
             letterSpacing: 1,
             whiteSpace: 'nowrap',
           }}>
-            Keep The Land Safe
+            Junior Firefighter
           </div>
         </div>
       </div>

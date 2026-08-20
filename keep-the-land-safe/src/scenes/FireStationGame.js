@@ -4,6 +4,8 @@ import DialogueBox from '../components/DialogueBox';
 import BackButton from '../components/BackButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 // Info slides data
 const SLIDES = [
@@ -98,44 +100,54 @@ const FireStationGame = ({ navigateTo, completeGame }) => {
     completeGame(SCENES.FIRE_STATION);
   };
 
-  const getBg = (slide) => {
-    switch (slide.bg) {
-      case 'firestation': return null; // handled separately
-      case 'blueprint': return '/blueprint.png';
-      case 'exit': return null; // green CSS background
-      case 'assembly': return '/assembly.png';
-      case 'road': return '/road.png';
-      case 'factors': return '/openingscenebg.png';
-      default: return '/openingscenebg.png';
-    }
-  };
-
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.FIRE_STATION]} />
 
       {/* ═══ INFO PHASE ═══ */}
       {phase === 'info' && (
         <>
-          {/* Background */}
-          {SLIDES[slideIdx].bg === 'exit' ? (
-            <div style={{ position: 'absolute', inset: 0, background: '#1B5E20', zIndex: 0 }} />
-          ) : SLIDES[slideIdx].bg === 'firestation' ? (
-            <img src="/openingscenebg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
-          ) : SLIDES[slideIdx].bg === 'assembly' ? (
-            <img src="/assembly point.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 70%', zIndex: 0 }} />
-          ) : (
-            <img src={getBg(SLIDES[slideIdx])} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
-          )}
-
-          {/* Exit sign image centered */}
+          {/* Keep every slide's art mounted so Next doesn't wait on a download. */}
           {SLIDES[slideIdx].bg === 'exit' && (
-            <img src="/exit sign.png" alt="" style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '40%', maxWidth: 400, objectFit: 'contain', zIndex: 1 }} />
+            <div style={{ position: 'absolute', inset: 0, background: '#1B5E20', zIndex: 0 }} />
           )}
+          {[
+            { src: asset('/openingscenebg.png'), show: SLIDES[slideIdx].bg === 'firestation' || SLIDES[slideIdx].bg === 'factors', pos: 'center bottom' },
+            { src: asset('/assembly point.png'), show: SLIDES[slideIdx].bg === 'assembly', pos: 'center 70%' },
+            { src: asset('/blueprint.png'), show: SLIDES[slideIdx].bg === 'blueprint', pos: 'center bottom' },
+            { src: asset('/road.png'), show: SLIDES[slideIdx].bg === 'road', pos: 'center bottom' },
+          ].map((item) => (
+            <img
+              key={item.src}
+              src={item.src}
+              alt=""
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'cover', objectPosition: item.pos, zIndex: 0,
+                opacity: item.show ? 1 : 0, pointerEvents: 'none',
+              }}
+            />
+          ))}
 
-          {/* Fire station asset on first and last slide */}
-          {SLIDES[slideIdx].bg === 'firestation' && (
-            <img src="/firestationasset.png" alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
-          )}
+          <img
+            src={asset("/exit sign.png")}
+            alt=""
+            style={{
+              position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)',
+              width: '40%', maxWidth: 400, objectFit: 'contain', zIndex: 1,
+              opacity: SLIDES[slideIdx].bg === 'exit' ? 1 : 0, pointerEvents: 'none',
+            }}
+          />
+
+          <img
+            src={asset("/firestationasset.png")}
+            alt=""
+            style={{
+              position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)',
+              width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1,
+              opacity: SLIDES[slideIdx].bg === 'firestation' ? 1 : 0, pointerEvents: 'none',
+            }}
+          />
 
           {/* Dim overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 2 }} />
@@ -149,16 +161,19 @@ const FireStationGame = ({ navigateTo, completeGame }) => {
             </div>
           )}
 
-          {/* Factors icons */}
-          {SLIDES[slideIdx].bg === 'factors' && (
-            <div style={{ position: 'absolute', top: '50%', right: '5%', transform: 'translateY(-50%)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, zIndex: 20 }}>
-              {['/fire.png', '/wind.png', '/terrain.png', '/phone.png'].map((img, i) => (
-                <div key={i} style={{ background: 'white', border: '3px solid #FFD23F', borderRadius: 16, padding: 20, width: 240, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={img} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Factors icons — stay mounted so they don't pop in late */}
+          <div style={{
+            position: 'absolute', top: '50%', right: '5%', transform: 'translateY(-50%)',
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, zIndex: 20,
+            opacity: SLIDES[slideIdx].bg === 'factors' ? 1 : 0,
+            pointerEvents: 'none',
+          }}>
+            {[asset('/fire.png'), asset('/wind.png'), asset('/terrain.png'), asset('/phone.png')].map((img, i) => (
+              <div key={i} style={{ background: 'white', border: '3px solid #FFD23F', borderRadius: 16, padding: 20, width: 240, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={img} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+              </div>
+            ))}
+          </div>
 
           {/* Blaze + dialogue */}
           <div style={{ position: 'absolute', bottom: '3%', left: '3%', display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
@@ -246,7 +261,7 @@ const FireStationGame = ({ navigateTo, completeGame }) => {
                   )}
                   {/* Fire on blocked roads */}
                   {cell === 2 && (
-                    <img src="/campfire-flame.png" alt="" style={{ position: 'absolute', inset: '10%', width: '80%', height: '80%', objectFit: 'contain', transformOrigin: 'center bottom', animation: 'fireFlicker 0.3s ease-in-out infinite' }} />
+                    <img src={asset("/campfire-flame.png")} alt="" style={{ position: 'absolute', inset: '10%', width: '80%', height: '80%', objectFit: 'contain', transformOrigin: 'center bottom', animation: 'fireFlicker 0.3s ease-in-out infinite' }} />
                   )}
                   {/* Start label */}
                   {isStart && (
@@ -318,7 +333,7 @@ const FireStationGame = ({ navigateTo, completeGame }) => {
                   border: isStart ? '3px solid #4CAF50' : isEnd ? '3px solid #F819E7' : 'none',
                 }}>
                   {cell === 1 && !isDrawn && <div style={{ position: 'absolute', inset: '40% 20%', background: '#FFD23F', borderRadius: 1, opacity: 0.4 }} />}
-                  {cell === 2 && <img src="/campfire-flame.png" alt="" style={{ position: 'absolute', inset: '10%', width: '80%', height: '80%', objectFit: 'contain', transformOrigin: 'center bottom', animation: 'fireFlicker 0.3s ease-in-out infinite' }} />}
+                  {cell === 2 && <img src={asset("/campfire-flame.png")} alt="" style={{ position: 'absolute', inset: '10%', width: '80%', height: '80%', objectFit: 'contain', transformOrigin: 'center bottom', animation: 'fireFlicker 0.3s ease-in-out infinite' }} />}
                   {isStart && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Fredoka One',cursive", fontSize: 14, color: '#fff', background: '#4CAF50', padding: '2px 4px', borderRadius: 3 }}>START</div>}
                   {isEnd && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Fredoka One',cursive", fontSize: 14, color: '#fff', background: '#F819E7', padding: '2px 4px', borderRadius: 3 }}>EXIT</div>}
                 </div>
@@ -343,8 +358,8 @@ const FireStationGame = ({ navigateTo, completeGame }) => {
 
 const FireStationVictory = ({ navigateTo }) => (
   <>
-    <img src="/openingscenebg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
-    <img src="/firestationasset.png" alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
+    <img src={asset("/openingscenebg.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }} />
+    <img src={asset("/firestationasset.png")} alt="" style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '75%', maxWidth: 800, objectFit: 'contain', zIndex: 1 }} />
     <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.28)', zIndex: 2 }} />
 
     <BackButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />

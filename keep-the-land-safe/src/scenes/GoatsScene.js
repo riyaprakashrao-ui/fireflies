@@ -5,6 +5,8 @@ import BackButton from '../components/BackButton';
 import HomeButton from '../components/HomeButton';
 import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
+import asset from '../asset';
+import { HiddenPrefetch, SCENE_ASSETS } from '../preloadAssets';
 
 // Grass patches scattered across the field
 const INITIAL_GRASS = [
@@ -16,12 +18,12 @@ const INITIAL_GRASS = [
 
 // Native plants positioned in their own clear areas (no grass nearby)
 const NATIVE_PLANTS = [
-  { id: 'n0', x: 8, y: 55, image: '/fushcia.png', size: 70 },
-  { id: 'n1', x: 37, y: 50, image: '/poppy.png', size: 65 },
-  { id: 'n2', x: 55, y: 64, image: '/fushcia.png', size: 70 },
-  { id: 'n3', x: 92, y: 48, image: '/poppy.png', size: 65 },
-  { id: 'n4', x: 28, y: 82, image: '/poppy.png', size: 65 },
-  { id: 'n5', x: 75, y: 68, image: '/fushcia.png', size: 70 },
+  { id: 'n0', x: 8, y: 55, image: asset('/fushcia.png'), size: 70 },
+  { id: 'n1', x: 37, y: 50, image: asset('/poppy.png'), size: 65 },
+  { id: 'n2', x: 55, y: 64, image: asset('/fushcia.png'), size: 70 },
+  { id: 'n3', x: 92, y: 48, image: asset('/poppy.png'), size: 65 },
+  { id: 'n4', x: 28, y: 82, image: asset('/poppy.png'), size: 65 },
+  { id: 'n5', x: 75, y: 68, image: asset('/fushcia.png'), size: 70 },
 ];
 
 const INTRO_TEXTS = [
@@ -104,8 +106,9 @@ const GoatsScene = ({ navigateTo, completeLevel }) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      <HiddenPrefetch urls={SCENE_ASSETS[SCENES.GOATS]} />
       {/* Background */}
-      <img src="/native-plants-field.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+      <img src={asset("/native-plants-field.png")} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
 
       {/* Back button — previous phase */}
       <BackButton onClick={() => {
@@ -123,7 +126,7 @@ const GoatsScene = ({ navigateTo, completeLevel }) => {
         <>
           {/* Grass visible in background */}
           {grass.map(g => (
-            <img key={g.id} src="/grass.png" alt="" style={{
+            <img key={g.id} src={asset("/grass.png")} alt="" style={{
               position: 'absolute', left: `${g.x}%`, top: `${g.y}%`,
               transform: 'translate(-50%, -50%)',
               width: 90, height: 110, objectFit: 'contain',
@@ -185,7 +188,7 @@ const GoatsScene = ({ navigateTo, completeLevel }) => {
 
           {/* Grass patches — click to eat */}
           {grass.map(g => (
-            <img key={g.id} src="/grass.png" alt="" onClick={() => handleGrassClick(g.id, g.x, g.y)} style={{
+            <img key={g.id} src={asset("/grass.png")} alt="" onClick={() => handleGrassClick(g.id, g.x, g.y)} style={{
               position: 'absolute', left: `${g.x}%`, top: `${g.y}%`,
               transform: 'translate(-50%, -50%)',
               width: 90, height: 110, objectFit: 'contain',
@@ -218,7 +221,7 @@ const GoatsScene = ({ navigateTo, completeLevel }) => {
 
           {/* Goat — draggable */}
           <img
-            src="/goat.png"
+            src={asset("/goat.png")}
             alt="Goat"
             draggable={false}
             onMouseDown={(e) => { e.preventDefault(); setDraggingGoat(true); setHasDragged(false); setDragStartPos({ x: goatPos.x, y: goatPos.y }); }}
@@ -272,7 +275,7 @@ const GoatsScene = ({ navigateTo, completeLevel }) => {
 
           {/* Goat stays where it finished */}
           <img
-            src="/goat.png"
+            src={asset("/goat.png")}
             alt="Goat"
             style={{
               position: 'absolute',

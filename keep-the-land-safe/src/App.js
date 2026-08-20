@@ -1,6 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import './App.css';
 import { SCENES } from './scenes';
+import { preloadScene, preloadAllAssets, HiddenPrefetch, ALL_ASSETS } from './preloadAssets';
+import LoadingScreen from './components/LoadingScreen';
 import TitleScreen from './scenes/TitleScreen';
 import OnboardingScreen from './scenes/OnboardingScreen';
 import MainMapScreen from './scenes/MainMapScreen';
@@ -74,10 +76,43 @@ function App() {
     try { return localStorage.getItem('hasSeenOnboarding') === 'true'; } catch { return false; }
   });
 
+  const navTimers = useRef({ swap: null, reveal: null });
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [assetsReady, setAssetsReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setAssetsReady(true);
+    }, 20000);
+
+    preloadAllAssets({
+      onProgress: (done, total) => {
+        if (!cancelled && total) setLoadProgress(done / total);
+      },
+    }).then(() => {
+      if (!cancelled) {
+        setLoadProgress(1);
+        setAssetsReady(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, []);
+
   const navigateTo = useCallback((scene, color) => {
+    preloadScene(scene);
     setTransitionColor(color || '#2d5a1b');
     setTransitioning(true);
-    setTimeout(() => { setCurrentScene(scene); setTransitioning(false); }, 500);
+    window.clearTimeout(navTimers.current.swap);
+    window.clearTimeout(navTimers.current.reveal);
+    // Swap the scene while the overlay is covering the screen so the next
+    // images can decode before the player sees them next to Blaze's line.
+    navTimers.current.swap = window.setTimeout(() => setCurrentScene(scene), 220);
+    navTimers.current.reveal = window.setTimeout(() => setTransitioning(false), 400);
   }, []);
 
   const completeLevel = useCallback((levelName) => {
@@ -133,7 +168,8 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="app-container">
-        {renderScene()}
+        <HiddenPrefetch urls={ALL_ASSETS} />
+        {assetsReady ? renderScene() : <LoadingScreen progress={loadProgress} />}
         <SceneTransition active={transitioning} color={transitionColor} />
       </div>
     </ErrorBoundary>
