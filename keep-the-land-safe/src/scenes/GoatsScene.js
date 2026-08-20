@@ -1,115 +1,303 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
+import BackButton from '../components/BackButton';
+import HomeButton from '../components/HomeButton';
+import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
 
-const DIALOGUES = [
-  'Goats are amazing helpers! They love to eat tall dry grass — the same grass that fuels wildfires!',
-  'When goats graze on overgrown land, they clear away the dry fuel that fires need to spread.',
-  'It is a totally natural way to keep the land safe — and the goats love it!',
-  'Tap the tall grass patches to send a goat to eat them! Clear all 8 patches!',
+// Grass patches scattered across the field
+const INITIAL_GRASS = [
+  { id: 0, x: 18, y: 40 }, { id: 1, x: 45, y: 38 }, { id: 2, x: 70, y: 40 },
+  { id: 3, x: 30, y: 56 }, { id: 4, x: 62, y: 54 }, { id: 5, x: 85, y: 58 },
+  { id: 6, x: 15, y: 70 }, { id: 7, x: 42, y: 72 }, { id: 8, x: 68, y: 78 },
+  { id: 9, x: 88, y: 76 }, { id: 10, x: 50, y: 86 }, { id: 11, x: 20, y: 86 },
 ];
-const PATCHES = [
-  {id:0,x:12,y:56},{id:1,x:22,y:61},{id:2,x:33,y:54},
-  {id:3,x:44,y:59},{id:4,x:55,y:55},{id:5,x:65,y:61},
-  {id:6,x:75,y:56},{id:7,x:85,y:58},
+
+// Native plants positioned in their own clear areas (no grass nearby)
+const NATIVE_PLANTS = [
+  { id: 'n0', x: 8, y: 55, image: '/fushcia.png', size: 70 },
+  { id: 'n1', x: 37, y: 50, image: '/poppy.png', size: 65 },
+  { id: 'n2', x: 55, y: 64, image: '/fushcia.png', size: 70 },
+  { id: 'n3', x: 92, y: 48, image: '/poppy.png', size: 65 },
+  { id: 'n4', x: 28, y: 82, image: '/poppy.png', size: 65 },
+  { id: 'n5', x: 75, y: 68, image: '/fushcia.png', size: 70 },
+];
+
+const INTRO_TEXTS = [
+  "Here we have tall grass, which is more fuel for a fire. Short grass is less fuel. Goats eat tall grass and small plants. This is a natural, eco-friendly way to reduce fuel!",
+  "But remember — goats should only eat the tall grass, not the native plants! Those are fire-safe and we want to keep them.",
 ];
 
 const GoatsScene = ({ navigateTo, completeLevel }) => {
-  const [idx, setIdx] = useState(0);
-  const [showDlg, setShowDlg] = useState(true);
-  const [started, setStarted] = useState(false);
-  const [eaten, setEaten] = useState([]);
-  const [goats, setGoats] = useState([
-    {id:0,x:8,y:70,eating:false,target:null},
-    {id:1,x:50,y:72,eating:false,target:null},
-    {id:2,x:90,y:70,eating:false,target:null},
-  ]);
-  const [success, setSuccess] = useState(false);
-  const timers = useRef({});
+  // Phases: intro -> instructions -> play -> success
+  const [phase, setPhase] = useState('intro');
+  const [introIdx, setIntroIdx] = useState(0);
+  const [grass, setGrass] = useState(INITIAL_GRASS);
+  const [goatPos, setGoatPos] = useState({ x: 50, y: 60 });
+  const [draggingGoat, setDraggingGoat] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState(null);
+  const [showError, setShowError] = useState(false);
 
-  const next = () => {
-    if (idx < DIALOGUES.length-1) setIdx(idx+1);
-    else { setShowDlg(false); setStarted(true); }
+  const handleMouseMove = (e) => {
+    if (!draggingGoat) return;
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - bounds.left) / bounds.width) * 100;
+    const y = ((e.clientY - bounds.top) / bounds.height) * 100;
+    
+    // Only count as dragged if moved more than 2%
+    if (dragStartPos && (Math.abs(x - dragStartPos.x) > 2 || Math.abs(y - dragStartPos.y) > 2)) {
+      setHasDragged(true);
+    }
+    
+    setGoatPos({ x: Math.max(5, Math.min(95, x)), y: Math.max(30, Math.min(90, y)) });
   };
 
-  const tapPatch = (patchId) => {
-    if (!started||eaten.includes(patchId)) return;
-    const patch = PATCHES[patchId];
-    const free = goats.filter(g=>!g.eating);
-    if (!free.length) return;
-    const goat = free.reduce((a,b)=>Math.abs(a.x-patch.x)<Math.abs(b.x-patch.x)?a:b);
-    setGoats(prev=>prev.map(g=>g.id===goat.id?{...g,x:patch.x,y:patch.y-8,eating:true,target:patchId}:g));
-    if (timers.current[patchId]) clearTimeout(timers.current[patchId]);
-    timers.current[patchId] = setTimeout(()=>{
-      setEaten(prev=>{
-        const next=[...prev,patchId];
-        if (next.length===PATCHES.length) setTimeout(()=>{ setSuccess(true); completeLevel(SCENES.GOATS); },600);
-        return next;
-      });
-      setGoats(prev=>prev.map(g=>g.target===patchId?{...g,eating:false,target:null}:g));
-    },1800);
+  const handleMouseUp = () => {
+    setDraggingGoat(false);
+    // Reset hasDragged after a short delay so click event fires first
+    setTimeout(() => setHasDragged(false), 50);
   };
+
+  // Tap the goat (only if NOT dragging) — eats nearby grass or shows error for native plants
+  const handleGoatTap = (e) => {
+    e.stopPropagation();
+    // If we just finished dragging, ignore this click and reset
+    if (hasDragged) {
+      setHasDragged(false);
+      return;
+    }
+
+    // Check if near a native plant first (must be very close — directly on top)
+    const nearNative = NATIVE_PLANTS.some(p => {
+      const dist = Math.sqrt((goatPos.x - p.x) ** 2 + (goatPos.y - p.y) ** 2);
+      return dist < 5;
+    });
+    if (nearNative) {
+      if (!showError) {
+        setShowError(true);
+        setTimeout(() => setShowError(false), 2500);
+      }
+      return;
+    }
+
+    // Eat any grass the goat is on top of
+    const newGrass = grass.filter(g => {
+      const dist = Math.sqrt((goatPos.x - g.x) ** 2 + (goatPos.y - g.y) ** 2);
+      return dist > 10;
+    });
+    if (newGrass.length < grass.length) {
+      setGrass(newGrass);
+      if (newGrass.length === 0) {
+        setTimeout(() => { setPhase('success'); completeLevel(SCENES.GOATS); }, 400);
+      }
+    }
+  };
+
+  const handleGrassClick = () => {};
+  const handlePlantClick = () => {};
 
   return (
-    <div style={{width:'100vw',height:'100vh',position:'relative',overflow:'hidden'}}>
-      <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,#87CEEB 0%,#B8E4F7 28%,#8BC34A 28%,#5a9e2f 55%,#3d7a1a 100%)'}}/>
-      <div style={{position:'absolute',top:'3%',right:'7%',fontSize:56,animation:'sunRays 4s ease-in-out infinite'}}>☀️</div>
-      <div style={{position:'absolute',top:'5%',left:'10%',fontSize:44,animation:'cloudDrift 9s ease-in-out infinite alternate'}}>☁️</div>
-      {[4,13,82,93].map((x,i)=>(
-        <div key={i} style={{position:'absolute',left:x+'%',top:'20%',fontSize:52+i*5,animation:'sway '+(3.5+i*0.4)+'s ease-in-out infinite',transformOrigin:'bottom center'}}>🌲</div>
-      ))}
-      {PATCHES.map(p=>{
-        const isEaten=eaten.includes(p.id);
-        const beingEaten=goats.some(g=>g.target===p.id);
-        return (
-          <div key={p.id} onClick={()=>tapPatch(p.id)} style={{position:'absolute',left:p.x+'%',top:p.y+'%',transform:'translate(-50%,-50%)',cursor:started&&!isEaten?'pointer':'default',zIndex:10,textAlign:'center'}}>
-            {!isEaten?(
-              <div style={{animation:beingEaten?'wiggle 0.2s ease infinite':'grassSway 2s ease-in-out infinite',transformOrigin:'bottom center'}}>
-                <div style={{fontSize:28}}>🌾</div>
-                <div style={{fontSize:16}}>🌾</div>
-                {started&&!beingEaten&&<div style={{fontSize:10,fontFamily:"'Nunito',sans-serif",fontWeight:800,color:'#fff',textShadow:'1px 1px 2px rgba(0,0,0,0.8)',background:'rgba(0,0,0,0.4)',borderRadius:6,padding:'1px 5px'}}>TAP!</div>}
-                {beingEaten&&<div style={{fontSize:14}}>😋</div>}
+    <div
+      style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
+      {/* Background */}
+      <img src="/native-plants-field.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+
+      {/* Back button — previous phase */}
+      <BackButton onClick={() => {
+        if (phase === 'intro') navigateTo(SCENES.FIELD_MAP);
+        else if (phase === 'instructions') setPhase('intro');
+        else if (phase === 'play') setPhase('instructions');
+        else if (phase === 'success') setPhase('play');
+      }} />
+
+      {/* Home button */}
+      <HomeButton onClick={() => navigateTo(SCENES.FIELD_MAP)} />
+
+      {/* ═══ INTRO ═══ */}
+      {phase === 'intro' && (
+        <>
+          {/* Grass visible in background */}
+          {grass.map(g => (
+            <img key={g.id} src="/grass.png" alt="" style={{
+              position: 'absolute', left: `${g.x}%`, top: `${g.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 90, height: 110, objectFit: 'contain',
+              zIndex: 5, pointerEvents: 'none',
+            }} />
+          ))}
+
+          {/* Native plants in background */}
+          {NATIVE_PLANTS.map(p => (
+            <img key={p.id} src={p.image} alt="" style={{
+              position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: p.size, height: p.size, objectFit: 'contain',
+              zIndex: 6, pointerEvents: 'none',
+              filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))',
+            }} />
+          ))}
+
+          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+            <FirefighterCharacter size={160} />
+            <DialogueBox
+              text={INTRO_TEXTS[introIdx]}
+              onNext={() => {
+                if (introIdx < INTRO_TEXTS.length - 1) setIntroIdx(introIdx + 1);
+                else setPhase('instructions');
+              }}
+              onBack={introIdx > 0 ? () => setIntroIdx(introIdx - 1) : null}
+              showName={false}
+              style={{ maxWidth: 600, marginBottom: 16 }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* ═══ INSTRUCTIONS ═══ */}
+      {phase === 'instructions' && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={160} />
+          <DialogueBox
+            text={"Here's how to play:\n• Drag the goat over the tall grass\n• Then tap the goat to make it eat!\n• Be careful not to eat the native plants (the flowers)\n• Clear all the tall grass to win!"}
+            onNext={() => setPhase('play')}
+            showName={false}
+            style={{ maxWidth: 600, marginBottom: 16 }}
+          />
+        </div>
+      )}
+
+      {/* ═══ PLAY ═══ */}
+      {phase === 'play' && (
+        <>
+          {/* Instruction */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Drag the goat over the tall grass, then tap the goat to eat it! Don't eat the native plants!
+              </p>
+            </div>
+          </div>
+
+          {/* Grass patches — click to eat */}
+          {grass.map(g => (
+            <img key={g.id} src="/grass.png" alt="" onClick={() => handleGrassClick(g.id, g.x, g.y)} style={{
+              position: 'absolute', left: `${g.x}%`, top: `${g.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 90, height: 110, objectFit: 'contain',
+              zIndex: 5, cursor: 'pointer',
+            }} />
+          ))}
+
+          {/* Native plants — click shows error */}
+          {NATIVE_PLANTS.map(p => (
+            <img key={p.id} src={p.image} alt="" onClick={handlePlantClick} style={{
+              position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: p.size, height: p.size, objectFit: 'contain',
+              zIndex: 6, cursor: 'pointer',
+              filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))',
+            }} />
+          ))}
+
+          {/* Error message */}
+          {showError && (
+            <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 30 }}>
+              <FirefighterCharacter size={120} />
+              <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 16, padding: '14px 20px', maxWidth: 400, boxShadow: '0 6px 24px rgba(0,0,0,0.15)', marginBottom: 14 }}>
+                <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 17, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.5, margin: 0 }}>
+                  Oops! That's a native plant — we want to keep those! They're fire-safe. Only eat the tall grass!
+                </p>
               </div>
-            ):(
-              <div style={{fontSize:18,opacity:0.6,animation:'popIn 0.3s ease'}}>🟫</div>
-            )}
+            </div>
+          )}
+
+          {/* Goat — draggable */}
+          <img
+            src="/goat.png"
+            alt="Goat"
+            draggable={false}
+            onMouseDown={(e) => { e.preventDefault(); setDraggingGoat(true); setHasDragged(false); setDragStartPos({ x: goatPos.x, y: goatPos.y }); }}
+            onClick={handleGoatTap}
+            style={{
+              position: 'absolute',
+              left: `${goatPos.x}%`, top: `${goatPos.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 180, height: 180, objectFit: 'contain',
+              zIndex: 10,
+              cursor: draggingGoat ? 'grabbing' : 'grab',
+              filter: 'drop-shadow(3px 6px 8px rgba(0,0,0,0.3))',
+            }}
+          />
+
+          {/* Progress */}
+          {grass.length > 0 && (
+            <div style={{ position: 'absolute', top: '14%', right: '4%', zIndex: 20, background: 'white', border: '3px solid #1F93BA', borderRadius: 16, padding: '8px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}>
+              <span style={{ fontFamily: "'Nunito',sans-serif", fontSize: 16, fontWeight: 800, color: '#1a1a1a' }}>
+                {INITIAL_GRASS.length - grass.length}/{INITIAL_GRASS.length} eaten!
+              </span>
+            </div>
+          )}
+
+          {/* Next button if all eaten */}
+          {grass.length === 0 && (
+            <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+              <button onClick={() => { setPhase('success'); completeLevel(SCENES.GOATS); }} style={{
+                background: '#F819E7', border: '3px solid #BB10AE',
+                borderBottom: '6px solid #BB10AE', borderRadius: 30,
+                padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+                fontSize: 20, color: 'white', cursor: 'pointer',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+              }}>Next</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══ SUCCESS ═══ */}
+      {phase === 'success' && (
+        <>
+          {/* Success text */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Good work!
+              </p>
+            </div>
           </div>
-        );
-      })}
-      {goats.map(g=>(
-        <div key={g.id} style={{position:'absolute',left:g.x+'%',top:g.y+'%',transform:'translate(-50%,-50%)',fontSize:44,transition:'left 0.8s ease,top 0.8s ease',animation:g.eating?'wiggle 0.3s ease infinite':'bob 2s ease-in-out infinite',zIndex:12,filter:'drop-shadow(2px 4px 4px rgba(0,0,0,0.3))'}}>🐐</div>
-      ))}
-      {started&&!success&&(
-        <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',background:'rgba(22,65,12,0.92)',border:'3px solid #F5C518',borderRadius:18,padding:'8px 22px',zIndex:30,display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:22}}>🐐</span>
-          <span style={{fontFamily:"'Fredoka One',cursive",fontSize:18,color:'#F5C518'}}>{eaten.length}/{PATCHES.length} cleared!</span>
-        </div>
-      )}
-      {started&&eaten.length===0&&(
-        <div style={{position:'absolute',top:68,left:'50%',transform:'translateX(-50%)',background:'rgba(0,0,0,0.7)',borderRadius:12,padding:'5px 16px',zIndex:30}}>
-          <span style={{fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:800,color:'white'}}>Tap the tall grass to send a goat!</span>
-        </div>
-      )}
-      {success&&(
-        <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50}}>
-          <div style={{background:'linear-gradient(135deg,#2d5a1b,#1a3a0a)',border:'5px solid #F5C518',borderRadius:28,padding:'36px 44px',textAlign:'center',animation:'popIn 0.5s ease',maxWidth:440}}>
-            <div style={{fontSize:64,marginBottom:8,animation:'bounce 1s ease infinite'}}>🐐</div>
-            <div style={{fontFamily:"'Fredoka One',cursive",fontSize:30,color:'#F5C518',marginBottom:10}}>Meadow Cleared!</div>
-            <p style={{fontFamily:"'Nunito',sans-serif",fontSize:15,color:'#a8e063',fontWeight:700,lineHeight:1.6,marginBottom:22}}>
-              The goats did it! All the tall dry grass is gone. Now there is much less fuel for wildfires. Goats are nature's lawn mowers!
-            </p>
-            <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{background:'linear-gradient(135deg,#F5C518,#E8A000)',border:'3px solid #8B6914',borderBottom:'6px solid #8B6914',borderRadius:18,padding:'12px 26px',fontFamily:"'Fredoka One',cursive",fontSize:18,color:'#1a1a1a',cursor:'pointer'}}>Back to Map</button>
+
+          {/* Goat stays where it finished */}
+          <img
+            src="/goat.png"
+            alt="Goat"
+            style={{
+              position: 'absolute',
+              left: `${goatPos.x}%`, top: `${goatPos.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 180, height: 180, objectFit: 'contain',
+              zIndex: 10,
+              filter: 'drop-shadow(3px 6px 8px rgba(0,0,0,0.3))',
+            }}
+          />
+
+          {/* Next button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={() => navigateTo(SCENES.FIELD_MAP)} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
           </div>
-        </div>
+        </>
       )}
-      <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{position:'absolute',top:14,left:14,zIndex:30,background:'rgba(22,65,12,0.9)',border:'3px solid #F5C518',borderRadius:14,padding:'7px 16px',fontFamily:"'Fredoka One',cursive",fontSize:15,color:'#F5C518',cursor:'pointer'}}>Map</button>
-      <div style={{position:'absolute',top:14,right:14,zIndex:30,background:'rgba(22,65,12,0.9)',border:'3px solid #F5C518',borderRadius:14,padding:'7px 16px',fontFamily:"'Fredoka One',cursive",fontSize:16,color:'#F5C518'}}>🐐 Grazing Goats</div>
-      <div style={{position:'absolute',bottom:14,left:14,display:'flex',alignItems:'flex-end',gap:12,zIndex:25}}>
-        <FirefighterCharacter size={110} speaking={showDlg} expression="happy"/>
-        {showDlg&&<DialogueBox text={DIALOGUES[idx]} onNext={next} style={{maxWidth:340,marginBottom:14}}/>}
-      </div>
     </div>
   );
 };
+
 export default GoatsScene;

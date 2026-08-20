@@ -1,96 +1,273 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
+import BackButton from '../components/BackButton';
+import HomeButton from '../components/HomeButton';
+import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
 
-const DIALOGUES = [
-  'See that dry land? Wildfires spread fast through dry grass and dead plants!',
-  'A firebreak is a strip of land where we clear away plants. It stops fire from spreading!',
-  'Think of it like a road that fire cannot cross! Tap each dry grass patch to clear it!',
-];
-const PATCHES = [
-  {id:0,x:14,y:54},{id:1,x:26,y:59},{id:2,x:40,y:52},
-  {id:3,x:54,y:56},{id:4,x:67,y:53},{id:5,x:80,y:58},
+const MIN_WIDTH = 120;
+const MIN_HEIGHT = 200;
+
+const INTRO_TEXTS = [
+  "Plants everywhere - fire can spread! A firebreak is a clear area of land that helps stop fires from spreading. Imagine a wide path where there are no trees, bushes, or anything else that can burn.",
+  "This empty space makes it very hard for a fire to jump across. Firebreaks are a key tool used to fight and control wildfires. They slow down or even stop a fire's movement, protecting homes, forests, and wildlife.",
+  "Fires need fuel, oxygen, and heat to burn. A firebreak removes the fuel. When a fire reaches a firebreak, it runs out of things to burn. This causes the fire to slow down, weaken, or even die out. Firefighters can then work more safely to put the fire out.",
+  "Firebreaks can be natural or man-made. Some forms of natural firebreaks include rivers and lakes, rocky areas, and valleys. People also create man-made firebreaks to protect specific areas.",
+  "Firebreaks are important for protecting homes, helping firefighters, and preventing damage.",
+  "Let's work on creating a firebreak!",
 ];
 
 const FirebreakScene = ({ navigateTo, completeLevel }) => {
-  const [idx, setIdx] = useState(0);
-  const [showDlg, setShowDlg] = useState(true);
-  const [started, setStarted] = useState(false);
-  const [cleared, setCleared] = useState([]);
-  const [success, setSuccess] = useState(false);
+  const [phase, setPhase] = useState('intro');
+  const [introIdx, setIntroIdx] = useState(0);
+  const [tooSmall, setTooSmall] = useState(false);
+  const [showFirebreak, setShowFirebreak] = useState(false);
 
-  const next = () => {
-    if (idx < DIALOGUES.length-1) setIdx(idx+1);
-    else { setShowDlg(false); setStarted(true); }
+  // Resizable box state — starts small in the center
+  const [box, setBox] = useState({ x: 40, y: 25, width: 8, height: 20 }); // percentages
+  const [dragging, setDragging] = useState(null); // which handle: 'n','s','e','w','ne','nw','se','sw'
+
+  const handleMouseDown = useCallback((handle, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(handle);
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!dragging) return;
+    const container = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - container.left) / container.width) * 100;
+    const py = ((e.clientY - container.top) / container.height) * 100;
+
+    setBox(prev => {
+      let { x, y, width, height } = prev;
+      const right = x + width;
+      const bottom = y + height;
+
+      if (dragging.includes('e')) { width = Math.max(5, px - x); }
+      if (dragging.includes('w')) { const newX = Math.min(px, right - 5); width = right - newX; x = newX; }
+      if (dragging.includes('s')) { height = Math.max(5, py - y); }
+      if (dragging.includes('n')) { const newY = Math.min(py, bottom - 5); height = bottom - newY; y = newY; }
+
+      // Clamp to bounds
+      x = Math.max(0, Math.min(x, 95));
+      y = Math.max(0, Math.min(y, 95));
+      width = Math.max(5, Math.min(width, 100 - x));
+      height = Math.max(5, Math.min(height, 100 - y));
+
+      return { x, y, width, height };
+    });
+  }, [dragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setDragging(null);
+  }, []);
+
+  const handleSubmit = () => {
+    // Must span nearly full height (top of hill to bottom)
+    // Box top must be within top 15% and box bottom must be within bottom 15%
+    const boxTop = box.y;
+    const boxBottom = box.y + box.height;
+    if (boxTop > 15 || boxBottom < 85) {
+      setTooSmall(true);
+      setTimeout(() => setTooSmall(false), 3000);
+      return;
+    }
+    setShowFirebreak(true);
+    setTimeout(() => {
+      setPhase('success');
+      completeLevel(SCENES.FIREBREAK);
+    }, 1200);
   };
 
-  const clear = (id) => {
-    if (!started || cleared.includes(id)) return;
-    const n = [...cleared, id];
-    setCleared(n);
-    if (n.length === PATCHES.length) setTimeout(() => { setSuccess(true); completeLevel(SCENES.FIREBREAK); }, 500);
-  };
+  // Handle styles for resize corners/edges
+  const handleStyle = (cursor) => ({
+    position: 'absolute', width: 18, height: 18,
+    background: '#1F93BA', border: '2px solid white',
+    borderRadius: '50%', cursor, zIndex: 5,
+    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+  });
 
   return (
-    <div style={{ width:'100vw', height:'100vh', position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,#87CEEB 0%,#B8E4F7 30%,#6abf3a 30%,#4a9e2a 58%,#8B6914 58%,#7a5a20 100%)' }}/>
-      <div style={{ position:'absolute', top:'4%', right:'8%', fontSize:56, animation:'sunRays 4s ease-in-out infinite' }}>☀️</div>
-      <div style={{ position:'absolute', top:'5%', left:'8%', fontSize:44, animation:'cloudDrift 8s ease-in-out infinite alternate' }}>☁️</div>
-      <div style={{ position:'absolute', top:'8%', right:'20%', fontSize:38, animation:'cloudDrift 11s ease-in-out infinite alternate-reverse' }}>☁️</div>
-      {[6,15,80,90].map((x,i)=>(
-        <div key={i} style={{ position:'absolute', left:x+'%', top:'22%', fontSize:52+i*6, animation:'sway '+(3.5+i*0.4)+'s ease-in-out infinite', transformOrigin:'bottom center' }}>🌲</div>
-      ))}
-      {started && (
-        <div style={{ position:'absolute', left:'2%', top:'44%', display:'flex', gap:4, zIndex:8 }}>
-          {[0,1,2,3,4].map(i=>(
-            <div key={i} style={{ fontSize:28+i*3, animation:'fireFlicker '+(0.2+i*0.05)+'s ease-in-out infinite', opacity:cleared.length>=3?0.25:1, transition:'opacity 0.6s ease' }}>🔥</div>
-          ))}
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+
+      {/* Background */}
+      <img src="/firebreak-bg.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+
+      {/* Back button — goes to previous phase */}
+      <BackButton onClick={() => {
+        if (phase === 'intro') navigateTo(SCENES.FIELD_MAP);
+        else if (phase === 'draw') setPhase('intro');
+        else if (phase === 'success') setPhase('draw');
+      }} />
+
+      {/* Home button — goes to map */}
+      <HomeButton onClick={() => navigateTo(SCENES.FIELD_MAP)} />
+
+      {/* ═══ INTRO ═══ */}
+      {phase === 'intro' && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={160} />
+          <DialogueBox
+            text={INTRO_TEXTS[introIdx]}
+            onNext={() => {
+              if (introIdx < INTRO_TEXTS.length - 1) setIntroIdx(introIdx + 1);
+              else setPhase('draw');
+            }}
+            onBack={introIdx > 0 ? () => setIntroIdx(introIdx - 1) : null}
+            showName={false}
+            style={{ maxWidth: 600, marginBottom: 16 }}
+          />
         </div>
       )}
-      <div style={{ position:'absolute', left:'6%', right:'6%', top:'47%', height:'18%', background:'linear-gradient(180deg,#c8a84b,#a07830)', borderRadius:10, border:'3px solid #8B6914', display:'flex', alignItems:'flex-end', justifyContent:'space-around', padding:'0 10px 4px', overflow:'hidden' }}>
-        {Array.from({length:18},(_,i)=>(
-          <div key={i} style={{ fontSize:18, animation:'grassSway '+(1.5+i*0.1)+'s ease-in-out infinite', transformOrigin:'bottom center' }}>🌾</div>
-        ))}
-      </div>
-      {PATCHES.map(p => {
-        const done = cleared.includes(p.id);
-        return (
-          <div key={p.id} onClick={()=>clear(p.id)} style={{ position:'absolute', left:p.x+'%', top:p.y+'%', transform:'translate(-50%,-50%)', width:72, height:44, cursor:started&&!done?'pointer':'default', zIndex:12 }}>
-            <div style={{ width:'100%', height:'100%', borderRadius:'50%', background:done?'radial-gradient(circle,#8B6914,#6B4A10)':'radial-gradient(circle,#c8a84b,#a07830)', border:'3px solid '+(done?'#5a3a08':'#8B6914'), display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:2, animation:started&&!done?'pulse 1.5s ease-in-out infinite':done?'popIn 0.3s ease':'none', boxShadow:started&&!done?'0 0 14px rgba(255,100,0,0.5)':'none' }}>
-              <span style={{ fontSize:20 }}>{done?'🪨':'🌾'}</span>
-              {started&&!done&&<span style={{ fontSize:10, fontFamily:"'Nunito',sans-serif", fontWeight:800, color:'#fff', textShadow:'1px 1px 2px rgba(0,0,0,0.8)' }}>TAP!</span>}
+
+      {/* ═══ DRAW (resizable box) ═══ */}
+      {phase === 'draw' && (
+        <>
+          {/* Mouse move/up listener on full area */}
+          <div
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: dragging ? 'grabbing' : 'default' }}
+          >
+            {/* The resizable box */}
+            <div style={{
+              position: 'absolute',
+              left: `${box.x}%`, top: `${box.y}%`,
+              width: `${box.width}%`, height: `${box.height}%`,
+              border: '3px dashed #8B5E3C',
+              background: 'rgba(139,94,60,0.2)',
+              borderRadius: 6,
+              transition: dragging ? 'none' : 'all 0.1s ease',
+            }}>
+              {/* Resize handles — corners */}
+              <div onMouseDown={(e) => handleMouseDown('nw', e)} style={{ ...handleStyle('nw-resize'), top: -9, left: -9 }} />
+              <div onMouseDown={(e) => handleMouseDown('ne', e)} style={{ ...handleStyle('ne-resize'), top: -9, right: -9 }} />
+              <div onMouseDown={(e) => handleMouseDown('sw', e)} style={{ ...handleStyle('sw-resize'), bottom: -9, left: -9 }} />
+              <div onMouseDown={(e) => handleMouseDown('se', e)} style={{ ...handleStyle('se-resize'), bottom: -9, right: -9 }} />
+
+              {/* Resize handles — edges */}
+              <div onMouseDown={(e) => handleMouseDown('n', e)} style={{ ...handleStyle('n-resize'), top: -9, left: '50%', transform: 'translateX(-50%)' }} />
+              <div onMouseDown={(e) => handleMouseDown('s', e)} style={{ ...handleStyle('s-resize'), bottom: -9, left: '50%', transform: 'translateX(-50%)' }} />
+              <div onMouseDown={(e) => handleMouseDown('w', e)} style={{ ...handleStyle('w-resize'), left: -9, top: '50%', transform: 'translateY(-50%)' }} />
+              <div onMouseDown={(e) => handleMouseDown('e', e)} style={{ ...handleStyle('e-resize'), right: -9, top: '50%', transform: 'translateY(-50%)' }} />
+
+              {/* Label inside */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <span style={{ fontFamily: "'Nunito',sans-serif", fontSize: 14, fontWeight: 800, color: '#5a3a10', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>
+                  ↔ Drag edges to resize!
+                </span>
+              </div>
+            </div>
+
+            {/* Firebreak image (appears after submit) */}
+            {showFirebreak && (
+              <div style={{
+                position: 'absolute',
+                left: `${box.x}%`, top: `${box.y}%`,
+                width: `${box.width}%`, height: `${box.height}%`,
+                overflow: 'hidden',
+                animation: 'fadeIn 1s ease',
+              }}>
+                <img src="/firebreakrect.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
+              </div>
+            )}
+          </div>
+
+          {/* Too small warning */}
+          {tooSmall && (
+            <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 30 }}>
+              <FirefighterCharacter size={130} />
+              <div style={{
+                background: 'white', border: '3px solid #1F93BA', borderRadius: 16,
+                padding: '18px 24px', maxWidth: 480, boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
+                marginBottom: 14,
+              }}>
+                <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 18, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.5, margin: 0 }}>
+                  Nice try, but we want to make sure that the firebreak is big enough to stop the fire from going further!
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Blaze + instructions */}
+          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+            <FirefighterCharacter size={130} />
+            <div style={{
+              background: 'white', border: '3px solid #1F93BA', borderRadius: 16,
+              padding: '18px 24px', maxWidth: 440, boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
+              marginBottom: 14,
+            }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 18, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.5, margin: 0 }}>
+                Drag the edges to make the firebreak tall and wide enough!
+              </p>
             </div>
           </div>
-        );
-      })}
-      {started&&!success&&(
-        <div style={{ position:'absolute', top:14, left:'50%', transform:'translateX(-50%)', background:'rgba(22,65,12,0.92)', border:'3px solid #F5C518', borderRadius:18, padding:'8px 22px', zIndex:30, display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ fontSize:20 }}>🪨</span>
-          <span style={{ fontFamily:"'Fredoka One',cursive", fontSize:18, color:'#F5C518' }}>{cleared.length}/{PATCHES.length} cleared!</span>
-        </div>
-      )}
-      {success&&(
-        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50 }}>
-          <div style={{ background:'linear-gradient(135deg,#2d5a1b,#1a3a0a)', border:'5px solid #F5C518', borderRadius:28, padding:'36px 44px', textAlign:'center', animation:'popIn 0.5s ease', maxWidth:440 }}>
-            <div style={{ fontSize:64, marginBottom:8, animation:'bounce 1s ease infinite' }}>🎉</div>
-            <div style={{ fontFamily:"'Fredoka One',cursive", fontSize:32, color:'#F5C518', marginBottom:10 }}>Firebreak Built!</div>
-            <p style={{ fontFamily:"'Nunito',sans-serif", fontSize:15, color:'#a8e063', fontWeight:700, lineHeight:1.6, marginBottom:22 }}>
-              Amazing! You cleared the dry grass and built a firebreak. Now fire cannot cross that strip of land!
-            </p>
-            <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{ background:'linear-gradient(135deg,#F5C518,#E8A000)', border:'3px solid #8B6914', borderBottom:'6px solid #8B6914', borderRadius:18, padding:'12px 26px', fontFamily:"'Fredoka One',cursive", fontSize:18, color:'#1a1a1a', cursor:'pointer' }}>
-              Back to Map
-            </button>
+
+          {/* Submit button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={handleSubmit} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Submit</button>
           </div>
-        </div>
+        </>
       )}
-      <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{ position:'absolute', top:14, left:14, zIndex:30, background:'rgba(22,65,12,0.9)', border:'3px solid #F5C518', borderRadius:14, padding:'7px 16px', fontFamily:"'Fredoka One',cursive", fontSize:15, color:'#F5C518', cursor:'pointer' }}>Map</button>
-      <div style={{ position:'absolute', top:14, right:14, zIndex:30, background:'rgba(22,65,12,0.9)', border:'3px solid #F5C518', borderRadius:14, padding:'7px 16px', fontFamily:"'Fredoka One',cursive", fontSize:16, color:'#F5C518' }}>🪨 Firebreaks</div>
-      <div style={{ position:'absolute', bottom:14, left:14, display:'flex', alignItems:'flex-end', gap:12, zIndex:25 }}>
-        <FirefighterCharacter size={110} speaking={showDlg} expression="happy"/>
-        {showDlg&&<DialogueBox text={DIALOGUES[idx]} onNext={next} style={{ maxWidth:340, marginBottom:14 }}/>}
-      </div>
+
+      {/* ═══ SUCCESS ═══ */}
+      {phase === 'success' && (
+        <>
+          {/* Firebreak image in place */}
+          <div style={{
+            position: 'absolute',
+            left: `${box.x}%`, top: `${box.y}%`,
+            width: `${box.width}%`, height: `${box.height}%`,
+            overflow: 'hidden', zIndex: 5,
+          }}>
+            <img src="/firebreakrect.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
+          </div>
+
+          {/* Blaze + success */}
+          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+            <FirefighterCharacter size={160} />
+            <DialogueBox
+              text="Great work! The fire won't be able to pass through! Want to draw it again? Click Redo to explore some more!"
+              showNext={false}
+              showName={false}
+              style={{ maxWidth: 400, marginBottom: 16 }}
+            />
+          </div>
+
+          {/* Redo button — bottom left */}
+          <div style={{ position: 'absolute', bottom: '5%', left: '5%', zIndex: 25 }}>
+            <button onClick={() => { setPhase('draw'); setShowFirebreak(false); }} style={{
+              background: '#FE8340', border: '3px solid #CE600A',
+              borderBottom: '5px solid #CE600A', borderRadius: 30,
+              padding: '10px 24px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 16, color: 'white', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            }}>Redo</button>
+          </div>
+
+          {/* Next button — bottom right */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 25 }}>
+            <button onClick={() => navigateTo(SCENES.FIELD_MAP)} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
+
 export default FirebreakScene;

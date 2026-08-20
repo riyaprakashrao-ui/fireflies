@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const DialogueBox = ({ text, onNext, showNext=true, style={}, characterName='Blaze' }) => {
+const DialogueBox = ({ text, onNext, onBack, showNext=true, style={}, characterName='Blaze', showName=true, image=null, imageSize=48, compact=false }) => {
   const [displayed, setDisplayed] = useState('');
   const [typing, setTyping] = useState(true);
   const [charIdx, setCharIdx] = useState(0);
@@ -16,22 +16,63 @@ const DialogueBox = ({ text, onNext, showNext=true, style={}, characterName='Bla
 
   const handleClick = () => {
     if (typing) { setDisplayed(text); setCharIdx(text.length); setTyping(false); }
-    else if (onNext) onNext();
   };
 
   return (
-    <div onClick={handleClick} style={{ background:'linear-gradient(135deg,rgba(255,255,255,0.97),rgba(255,248,220,0.97))', border:'4px solid #F5C518', borderRadius:22, padding:'16px 22px', boxShadow:'0 8px 28px rgba(0,0,0,0.25)', cursor:'pointer', position:'relative', animation:'slideInUp 0.4s ease', ...style }}>
-      <div style={{ position:'absolute', top:-17, left:18, background:'#F5C518', color:'#1a1a1a', fontFamily:"'Fredoka One',cursive", fontSize:13, padding:'3px 12px', borderRadius:10, boxShadow:'0 2px 6px rgba(0,0,0,0.2)' }}>
-        🔥 {characterName}
+    <div onClick={handleClick} style={{ background:'white', border:'3px solid #1F93BA', borderRadius:16, padding: compact ? '12px 16px' : '20px 26px', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', cursor:'pointer', position:'relative', animation:'fadeIn 0.6s ease', ...style }}>
+      {showName && <div style={{ position:'absolute', top:-17, left:18, background:'#1F93BA', color:'white', fontFamily:"'Fredoka One',cursive", fontSize:13, padding:'3px 12px', borderRadius:10, boxShadow:'0 2px 6px rgba(0,0,0,0.2)' }}>
+        {characterName}
+      </div>}
+      <div style={{ display: image && imageSize >= 72 ? 'flex' : 'block', alignItems: 'center', gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {image && imageSize < 72 && (
+            <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+              {image === 'back' ? (
+                <div style={{ background:'#FE8340', border:'3px solid #CE600A', borderRadius:30, padding:'6px 18px', fontFamily:"'Fredoka One',cursive", fontSize:14, color:'white', display:'inline-block' }}>← Back</div>
+              ) : image === 'next' ? (
+                <div style={{ background:'#F819E7', borderRadius:18, padding:'5px 14px', fontFamily:"'Fredoka One',cursive", fontSize:15, color:'white', display:'inline-block' }}>Next ▶</div>
+              ) : (
+                <img src={image} alt="" style={{ width: imageSize, height: imageSize, objectFit: 'contain' }} />
+              )}
+            </div>
+          )}
+          <p style={{ fontFamily:"'Nunito',sans-serif", fontSize: compact ? 18 : 20, fontWeight:700, color:'#1a1a1a', lineHeight:1.5, minHeight: compact ? 0 : 50, margin:0, whiteSpace:'pre-wrap' }}>
+            {displayed}
+            {typing && <span style={{ display:'inline-block', width:2, height:16, background:'#1F93BA', marginLeft:2, animation:'pulse 0.5s ease infinite', verticalAlign:'middle' }}/>}
+          </p>
+        </div>
+        {image && imageSize >= 72 && (
+          <img src={image} alt="" style={{ width: imageSize, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+        )}
       </div>
-      <p style={{ fontFamily:"'Nunito',sans-serif", fontSize:15, fontWeight:700, color:'#2d2d2d', lineHeight:1.6, minHeight:44, margin:0 }}>
-        {displayed}
-        {typing && <span style={{ display:'inline-block', width:2, height:15, background:'#F5C518', marginLeft:2, animation:'pulse 0.5s ease infinite', verticalAlign:'middle' }}/>}
-      </p>
       {!typing && showNext && (
-        <div style={{ display:'flex', justifyContent:'flex-end', marginTop:8 }}>
-          <div style={{ background:'#F5C518', color:'#1a1a1a', fontFamily:"'Fredoka One',cursive", fontSize:13, padding:'5px 14px', borderRadius:18, animation:'bounce 1s ease infinite', boxShadow:'0 2px 6px rgba(0,0,0,0.2)' }}>
-            {onNext ? 'Next ▶' : 'Got it! ✓'}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12 }}>
+          {/* Back button */}
+          {onBack ? (
+            <button onClick={(e) => { e.stopPropagation(); onBack(); }} style={{
+              background: '#FE8340', border: 'none',
+              borderRadius: 18, padding: '5px 14px',
+              fontFamily: "'Fredoka One',cursive", fontSize: 15,
+              color: 'white', cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            }}>◀ Back</button>
+          ) : <div />}
+
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {/* Blue speaking dots */}
+            <div style={{ display:'flex', gap:4 }}>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#1F93BA', animation:'speakPulse 1s ease-in-out infinite', animationDelay:`${i*0.25}s` }} />
+              ))}
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); if (onNext) onNext(); }} style={{
+              background: '#F819E7', color: 'white',
+              fontFamily: "'Fredoka One',cursive", fontSize: 15,
+              padding: '5px 14px', borderRadius: 18, border: 'none',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2)', cursor: 'pointer',
+            }}>
+              {onNext ? 'Next ▶' : 'Got it! ✓'}
+            </button>
           </div>
         </div>
       )}

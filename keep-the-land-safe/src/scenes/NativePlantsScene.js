@@ -1,117 +1,333 @@
 import React, { useState } from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
+import BackButton from '../components/BackButton';
+import HomeButton from '../components/HomeButton';
+import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
 
-const DIALOGUES = [
-  'Some plants are much safer in wildfires than others!',
-  'California native plants are fire-resistant. They do not burn as easily as dry grass.',
-  'Meet three special plants: California Cherry Tree, California Fuchsia, and California Poppy!',
-  'Click a plant card to pick it up, then click the matching garden spot to plant it!',
+const INTRO_TEXTS = [
+  "These plants are not from this area, so they burn easily. It's important to replant native plants that are more resistant to fires.",
 ];
+
 const PLANTS = [
-  { id:'cherry',  name:'Cherry Tree', emoji:'🍒', bg:'#8B0000', fact:'Thick bark resists fire! Deep roots help it survive and regrow.' },
-  { id:'fuchsia', name:'CA Fuchsia',  emoji:'🌺', bg:'#CC0066', fact:'Waxy leaves hold moisture, making it much harder to burn!' },
-  { id:'poppy',   name:'CA Poppy',    emoji:'🌼', bg:'#FF8C00', fact:"California's state flower! Goes dormant in dry seasons, reducing fire fuel." },
-];
-const SPOTS = [
-  { id:'cherry', x:22, y:54 },
-  { id:'fuchsia',x:50, y:57 },
-  { id:'poppy',  x:76, y:54 },
+  { id: 'cherry', name: 'Catalina Cherry Tree', image: '/cherry-tree.png', dropSize: 120,
+    facts: [
+      'Thick, waxy leaves that hold water',
+      "Doesn't drop a lot of dry leaves/needles like pine trees do",
+      'No oily sap or wood (unlike trees like eucalyptus, which burn easily)',
+    ]},
+  { id: 'fuchsia', name: 'California Fuchsia', image: '/fushcia.png', dropSize: 80,
+    facts: [
+      'Leaves stay moist, even in summer',
+      'Grows low and spread out, not tall and woody',
+      'No oily parts that catch fire easily',
+    ]},
+  { id: 'poppy', name: 'California Poppy', image: '/poppy.png', dropSize: 80,
+    facts: [
+      'Small and low to the ground — no tall dry parts for fire to climb',
+      'Juicy, watery leaves and stems',
+      "Doesn't leave much dead stuff behind",
+    ]},
 ];
 
 const NativePlantsScene = ({ navigateTo, completeLevel }) => {
-  const [idx, setIdx] = useState(0);
-  const [showDlg, setShowDlg] = useState(true);
-  const [started, setStarted] = useState(false);
-  const [planted, setPlanted] = useState({});
-  const [selected, setSelected] = useState(null);
-  const [fact, setFact] = useState(null);
-  const [wrong, setWrong] = useState(null);
-  const [success, setSuccess] = useState(false);
+  // Phases: intro -> learn -> summary -> drag -> success
+  const [phase, setPhase] = useState('intro');
+  const [introIdx, setIntroIdx] = useState(0);
+  const [expandedPlant, setExpandedPlant] = useState(null);
+  const [placedPlants, setPlacedPlants] = useState([]);
+  const [draggingPlant, setDraggingPlant] = useState(null);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
 
-  const next = () => {
-    if (idx < DIALOGUES.length-1) setIdx(idx+1);
-    else { setShowDlg(false); setStarted(true); }
+  // Drag handlers
+  const handleDragStart = (plantId, e) => {
+    setDraggingPlant(plantId);
+    setDragPos({ x: e.clientX, y: e.clientY });
   };
 
-  const clickSpot = (spotId) => {
-    if (!started||!selected||planted[spotId]) return;
-    if (selected===spotId) {
-      const plant = PLANTS.find(p=>p.id===selected);
-      const newPlanted = {...planted,[spotId]:selected};
-      setPlanted(newPlanted); setSelected(null);
-      setFact(plant); setTimeout(()=>setFact(null),2800);
-      if (Object.keys(newPlanted).length===SPOTS.length)
-        setTimeout(()=>{ setSuccess(true); completeLevel(SCENES.NATIVE_PLANTS); },1000);
-    } else {
-      setWrong(spotId); setTimeout(()=>setWrong(null),500);
+  const handleMouseMove = (e) => {
+    if (!draggingPlant) return;
+    setDragPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = (e) => {
+    if (!draggingPlant) return;
+    // If dropped on the right side (the grass field area), place it
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const xPct = ((e.clientX - bounds.left) / bounds.width) * 100;
+    const yPct = ((e.clientY - bounds.top) / bounds.height) * 100;
+
+    if (xPct > 20) { // dropped on the field (right of panel)
+      const clampedY = Math.max(yPct, 42); // push to top of grass if dropped in sky
+      const newPlaced = [...placedPlants, { id: draggingPlant, x: xPct, y: clampedY }];
+      setPlacedPlants(newPlaced);
     }
+    setDraggingPlant(null);
   };
 
-  const available = PLANTS.filter(p=>!Object.values(planted).includes(p.id));
+  // Plants always available — library style, never removed
+  const availablePlants = PLANTS;
 
   return (
-    <div style={{ width:'100vw', height:'100vh', position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,#87CEEB 0%,#B8E4F7 28%,#6abf3a 28%,#4a9e2a 55%,#3d7a1a 100%)' }}/>
-      <div style={{ position:'absolute', top:'3%', right:'7%', fontSize:56, animation:'sunRays 4s ease-in-out infinite' }}>☀️</div>
-      <div style={{ position:'absolute', top:'5%', left:'8%', fontSize:44, animation:'cloudDrift 9s ease-in-out infinite alternate' }}>☁️</div>
-      {[5,14,82,92].map((x,i)=>(
-        <div key={i} style={{ position:'absolute', left:x+'%', top:'20%', fontSize:52+i*5, animation:'sway '+(3.5+i*0.4)+'s ease-in-out infinite', transformOrigin:'bottom center' }}>🌲</div>
-      ))}
-      <div style={{ position:'absolute', left:'8%', right:'8%', top:'42%', height:'20%', background:'linear-gradient(180deg,#5a3a10,#3d2508)', borderRadius:14, border:'4px solid #8B6914', boxShadow:'0 8px 24px rgba(0,0,0,0.3)' }}/>
-      {SPOTS.map(spot=>{
-        const isPlanted=planted[spot.id];
-        const plant=isPlanted?PLANTS.find(p=>p.id===isPlanted):null;
-        const isWrong=wrong===spot.id;
-        const isTarget=selected&&!isPlanted;
-        return (
-          <div key={spot.id} onClick={()=>clickSpot(spot.id)} style={{ position:'absolute', left:spot.x+'%', top:spot.y+'%', transform:'translate(-50%,-50%)', width:100, height:100, cursor:started&&!isPlanted&&selected?'pointer':'default', zIndex:15 }}>
-            <div style={{ width:'100%', height:'100%', borderRadius:'50%', border:'4px dashed '+(isWrong?'#FF4444':isTarget?'#F5C518':'#8B6914'), background:isWrong?'rgba(255,68,68,0.2)':isTarget?'rgba(245,197,24,0.15)':'rgba(139,105,20,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', animation:isWrong?'shake 0.4s ease':isTarget?'pulse 1s ease infinite':isPlanted?'popIn 0.4s ease':'none', transition:'all 0.2s ease' }}>
-              {isPlanted
-                ? <><span style={{fontSize:34}}>{plant.emoji}</span><span style={{fontSize:10,fontFamily:"'Nunito',sans-serif",fontWeight:800,color:'#2E7D32'}}>Planted!</span></>
-                : <><span style={{fontSize:26,opacity:0.5}}>🌱</span><span style={{fontSize:10,fontFamily:"'Nunito',sans-serif",fontWeight:800,color:isTarget?'#F5C518':'#8B6914',textAlign:'center',padding:'0 4px'}}>{isTarget?'Plant here?':spot.id}</span></>
-              }
+    <div
+      style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
+      {/* Background — changes per phase */}
+      <img
+        src={phase === 'intro' ? '/firebreak-bg.png' : '/native-plants-field.png'}
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
+      />
+
+      {/* Back button — goes to previous phase */}
+      <BackButton onClick={() => {
+        if (phase === 'intro') navigateTo(SCENES.FIELD_MAP);
+        else if (phase === 'learn') setPhase('intro');
+        else if (phase === 'summary') setPhase('learn');
+        else if (phase === 'drag') setPhase('summary');
+        else if (phase === 'success') setPhase('drag');
+      }} />
+
+      {/* Home button */}
+      <HomeButton onClick={() => navigateTo(SCENES.FIELD_MAP)} />
+
+      {/* ═══ INTRO ═══ */}
+      {phase === 'intro' && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={160} />
+          <DialogueBox
+            text={INTRO_TEXTS[introIdx]}
+            onNext={() => {
+              if (introIdx < INTRO_TEXTS.length - 1) setIntroIdx(introIdx + 1);
+              else setPhase('learn');
+            }}
+            onBack={introIdx > 0 ? () => setIntroIdx(introIdx - 1) : null}
+            showName={false}
+            style={{ maxWidth: 600, marginBottom: 16 }}
+          />
+        </div>
+      )}
+
+      {/* ═══ LEARN ═══ */}
+      {phase === 'learn' && (
+        <>
+          {/* Instruction text top */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Tap to learn more about these plants.
+              </p>
             </div>
           </div>
-        );
-      })}
-      {started&&(
-        <div style={{ position:'absolute', top:12, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:30 }}>
-          {available.map((plant,i)=>(
-            <div key={plant.id} onClick={()=>setSelected(selected===plant.id?null:plant.id)} style={{ background:selected===plant.id?'linear-gradient(135deg,#F5C518,#E8A000)':plant.bg, border:'3px solid '+(selected===plant.id?'#8B6914':'rgba(255,255,255,0.3)'), borderBottom:'6px solid '+(selected===plant.id?'#8B6914':'rgba(0,0,0,0.3)'), borderRadius:16, padding:'10px 14px', cursor:'pointer', textAlign:'center', minWidth:90, transform:selected===plant.id?'translateY(-8px) scale(1.08)':'scale(1)', transition:'all 0.2s ease', boxShadow:selected===plant.id?'0 12px 28px rgba(0,0,0,0.4)':'0 6px 16px rgba(0,0,0,0.3)', animation:'popIn 0.4s ease both', animationDelay:(i*0.1)+'s' }}>
-              <div style={{fontSize:30}}>{plant.emoji}</div>
-              <div style={{fontFamily:"'Nunito',sans-serif",fontSize:11,fontWeight:800,color:selected===plant.id?'#1a1a1a':'white',marginTop:4}}>{plant.name}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {fact&&(
-        <div style={{ position:'absolute', top:'30%', left:'50%', transform:'translate(-50%,-50%)', background:'rgba(22,65,12,0.97)', border:'4px solid #F5C518', borderRadius:22, padding:'20px 28px', textAlign:'center', zIndex:40, animation:'popIn 0.4s ease', maxWidth:300, boxShadow:'0 16px 48px rgba(0,0,0,0.5)' }}>
-          <div style={{fontSize:44,marginBottom:6}}>{fact.emoji}</div>
-          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:18,color:'#F5C518',marginBottom:6}}>{fact.name}</div>
-          <p style={{fontFamily:"'Nunito',sans-serif",fontSize:13,color:'#a8e063',fontWeight:700,lineHeight:1.5,margin:0}}>{fact.fact}</p>
-        </div>
-      )}
-      {success&&(
-        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:50 }}>
-          <div style={{ background:'linear-gradient(135deg,#2d5a1b,#1a3a0a)', border:'5px solid #F5C518', borderRadius:28, padding:'36px 44px', textAlign:'center', animation:'popIn 0.5s ease', maxWidth:440 }}>
-            <div style={{fontSize:64,marginBottom:8,animation:'bounce 1s ease infinite'}}>🌸</div>
-            <div style={{fontFamily:"'Fredoka One',cursive",fontSize:30,color:'#F5C518',marginBottom:10}}>Garden Complete!</div>
-            <p style={{fontFamily:"'Nunito',sans-serif",fontSize:15,color:'#a8e063',fontWeight:700,lineHeight:1.6,marginBottom:22}}>
-              You planted all three California native plants! These fire-resistant plants help protect our land from wildfires!
-            </p>
-            <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{background:'linear-gradient(135deg,#F5C518,#E8A000)',border:'3px solid #8B6914',borderBottom:'6px solid #8B6914',borderRadius:18,padding:'12px 26px',fontFamily:"'Fredoka One',cursive",fontSize:18,color:'#1a1a1a',cursor:'pointer'}}>Back to Map</button>
+
+          {/* Blaze on left */}
+          <div style={{ position: 'absolute', bottom: '3%', left: '2%', zIndex: 10 }}>
+            <FirefighterCharacter size={240} />
           </div>
+
+          {/* Plant cards */}
+          {!expandedPlant && (
+            <div style={{ position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexWrap: 'nowrap', gap: 20, zIndex: 15 }}>
+              {PLANTS.map(plant => (
+                <div
+                  key={plant.id}
+                  onClick={() => setExpandedPlant(plant.id)}
+                  style={{
+                    background: 'white', border: '3px solid #FFD23F',
+                    borderRadius: 14, padding: '20px 24px',
+                    width: 240, cursor: 'pointer',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <img src={plant.image} alt={plant.name} style={{ width: 120, height: 120, objectFit: 'contain', marginBottom: 10 }} />
+                  <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>{plant.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Expanded card with dimmed background */}
+          {expandedPlant && (
+            <>
+              <div onClick={() => setExpandedPlant(null)} style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 25,
+              }} />
+              <div style={{
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                background: 'white', border: '3px solid #FFD23F', borderRadius: 18,
+                padding: '28px 36px', zIndex: 30, width: '70%', maxWidth: 600,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+                animation: 'none',
+              }}>
+                {(() => {
+                  const plant = PLANTS.find(p => p.id === expandedPlant);
+                  return (
+                    <>
+                      <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 24, fontWeight: 900, color: '#1a1a1a', marginBottom: 16 }}>{plant.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 32 }}>
+                        <img src={plant.image} alt={plant.name} style={{ width: 140, height: 140, objectFit: 'contain', flexShrink: 0 }} />
+                        <ul style={{ fontFamily: "'Nunito',sans-serif", fontSize: 18, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.8, margin: 0, paddingLeft: 20 }}>
+                          {plant.facts.map((fact, i) => (
+                            <li key={i}>{fact}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <button onClick={() => setExpandedPlant(null)} style={{
+                        marginTop: 20, background: '#F819E7', border: 'none', borderRadius: 18,
+                        padding: '8px 20px', fontFamily: "'Fredoka One',cursive", fontSize: 15,
+                        color: 'white', cursor: 'pointer',
+                      }}>Close</button>
+                    </>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+
+          {/* Next button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={() => setPhase('summary')} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
+          </div>
+        </>
+      )}
+
+      {/* ═══ SUMMARY ═══ */}
+      {phase === 'summary' && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={160} />
+          <DialogueBox
+            text={'Why these are all "fire-safe" plants:\n• They stay juicy, not dry\n• They don\'t have oils that burn hot\n• They don\'t pile up dead leaves/branches\n• They grow low and spaced out, so fire can\'t climb or spread easily'}
+            onNext={() => setPhase('drag')}
+            showName={false}
+            style={{ maxWidth: 600, marginBottom: 16 }}
+          />
         </div>
       )}
-      <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{position:'absolute',top:14,left:14,zIndex:30,background:'rgba(22,65,12,0.9)',border:'3px solid #F5C518',borderRadius:14,padding:'7px 16px',fontFamily:"'Fredoka One',cursive",fontSize:15,color:'#F5C518',cursor:'pointer'}}>Map</button>
-      <div style={{position:'absolute',top:14,right:14,zIndex:30,background:'rgba(22,65,12,0.9)',border:'3px solid #F5C518',borderRadius:14,padding:'7px 16px',fontFamily:"'Fredoka One',cursive",fontSize:16,color:'#F5C518'}}>🌸 Native Plants</div>
-      <div style={{position:'absolute',bottom:14,left:14,display:'flex',alignItems:'flex-end',gap:12,zIndex:25}}>
-        <FirefighterCharacter size={110} speaking={showDlg} expression="happy"/>
-        {showDlg&&<DialogueBox text={DIALOGUES[idx]} onNext={next} style={{maxWidth:340,marginBottom:14}}/>}
-      </div>
+
+      {/* ═══ DRAG & DROP ═══ */}
+      {phase === 'drag' && (
+        <>
+          {/* Instruction text top */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Drag and drop the plants into the grass to protect it!
+              </p>
+            </div>
+          </div>
+
+          {/* Plant cards on the left */}
+          <div style={{ position: 'absolute', top: '16%', left: '2%', display: 'flex', flexDirection: 'column', gap: 12, zIndex: 15 }}>
+            {availablePlants.map(plant => (
+              <div
+                key={plant.id}
+                onMouseDown={(e) => handleDragStart(plant.id, e)}
+                style={{
+                  background: 'white', border: '3px solid #FFD23F',
+                  borderRadius: 12, padding: '10px 14px',
+                  width: 140, cursor: 'grab', textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  userSelect: 'none',
+                }}
+              >
+                <img src={plant.image} alt={plant.name} style={{ width: 70, height: 70, objectFit: 'contain', pointerEvents: 'none' }} />
+                <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 12, fontWeight: 800, color: '#1a1a1a', marginTop: 4 }}>{plant.name}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Placed plants on the field */}
+          {placedPlants.map((pp, i) => {
+            const plant = PLANTS.find(p => p.id === pp.id);
+            return (
+              <div key={i} style={{
+                position: 'absolute', left: `${pp.x}%`, top: `${pp.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 8, animation: 'popIn 0.4s ease',
+              }}>
+                <img src={plant.image} alt={plant.name} style={{ width: plant.dropSize, height: plant.dropSize, objectFit: 'contain', filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.3))' }} />
+              </div>
+            );
+          })}
+
+          {/* Dragging ghost */}
+          {draggingPlant && (
+            <div style={{
+              position: 'fixed', left: dragPos.x, top: dragPos.y,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 100, pointerEvents: 'none', opacity: 0.8,
+            }}>
+              <img src={PLANTS.find(p => p.id === draggingPlant).image} alt="" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+            </div>
+          )}
+
+          {/* Next button — always visible once at least one plant placed */}
+          {placedPlants.length > 0 && (
+            <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+              <button onClick={() => { setPhase('success'); completeLevel(SCENES.NATIVE_PLANTS); }} style={{
+                background: '#F819E7', border: '3px solid #BB10AE',
+                borderBottom: '6px solid #BB10AE', borderRadius: 30,
+                padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+                fontSize: 20, color: 'white', cursor: 'pointer',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+              }}>Next</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══ SUCCESS ═══ */}
+      {phase === 'success' && (
+        <>
+          {/* Success text */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 24, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Good work!
+              </p>
+            </div>
+          </div>
+
+          {/* Placed plants stay visible */}
+          {placedPlants.map((pp, i) => {
+            const plant = PLANTS.find(p => p.id === pp.id);
+            return (
+              <div key={i} style={{
+                position: 'absolute', left: `${pp.x}%`, top: `${pp.y}%`,
+                transform: 'translate(-50%, -50%)', zIndex: 8,
+              }}>
+                <img src={plant.image} alt={plant.name} style={{ width: plant.dropSize, height: plant.dropSize, objectFit: 'contain', filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.3))' }} />
+              </div>
+            );
+          })}
+
+          {/* Next button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={() => navigateTo(SCENES.FIELD_MAP)} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
+
 export default NativePlantsScene;

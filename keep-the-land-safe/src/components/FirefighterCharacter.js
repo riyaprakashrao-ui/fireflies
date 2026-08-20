@@ -1,16 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 const FirefighterCharacter = ({ size = 180, speaking = false, waving = false, style = {}, expression = 'happy' }) => {
-  const [bounce, setBounce] = useState(false);
-
-  // Gentle bounce/wave loop
-  useEffect(() => {
-    const id = setInterval(() => {
-      setBounce(true);
-      setTimeout(() => setBounce(false), 600);
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
 
   return (
     <div style={{
@@ -28,17 +18,13 @@ const FirefighterCharacter = ({ size = 180, speaking = false, waving = false, st
           height: '100%',
           objectFit: 'contain',
           objectPosition: 'bottom',
-          animation: waving
-            ? 'wiggle 0.5s ease-in-out infinite'
-            : bounce
-            ? 'popIn 0.4s ease'
-            : 'bob 3s ease-in-out infinite',
+          animation: 'none',
           filter: 'drop-shadow(2px 6px 8px rgba(0,0,0,0.35))',
         }}
       />
 
       {/* Speaking indicator dots */}
-      {speaking && (
+      {false && speaking && (
         <div style={{
           position: 'absolute',
           top: '5%',

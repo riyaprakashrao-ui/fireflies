@@ -1,130 +1,274 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
+import BackButton from '../components/BackButton';
+import HomeButton from '../components/HomeButton';
+import MapButton from '../components/MapButton';
 import { SCENES } from '../scenes';
 
-const DIALOGUES = [
-  'Now for the most powerful and most careful method: the Controlled Burn!',
-  'A controlled burn is when trained professionals carefully set fire to dead plants and dry brush.',
-  'This clears old dead material and makes room for new healthy plants to grow!',
-  'IMPORTANT: Controlled burns are ONLY done by trained professionals. Never try this yourself!',
-  'Click the safety steps in the correct order to complete the controlled burn!',
-];
-const STEPS = [
-  {id:0,label:'Check the weather',emoji:'🌤️',color:'#2196F3',desc:'Make sure wind is calm and conditions are safe.'},
-  {id:1,label:'Set safety perimeter',emoji:'🚧',color:'#FF9800',desc:'Block off the area so no one gets hurt.'},
-  {id:2,label:'Have water ready',emoji:'💧',color:'#00BCD4',desc:'Always have water to control the fire.'},
-  {id:3,label:'Light carefully',emoji:'🔥',color:'#FF5722',desc:'Professionals light only a small, controlled area.'},
-  {id:4,label:'Monitor closely',emoji:'👀',color:'#9C27B0',desc:'Watch the fire and keep it contained.'},
-  {id:5,label:'Extinguish fully',emoji:'🚒',color:'#4CAF50',desc:'Make sure every ember is out before leaving.'},
+const INTRO_TEXTS = [
+  "Here we have lots of dry plants. This can help a wildfire spread. Wildfire safety professionals carefully plan a controlled fire to get rid of the dry plants and make room for healthy ones to grow.",
+  "These burns work because burning away the old dead plants allows for new ones to grow. Dead leaves and branches pile up over time and can fuel bigger, more dangerous fires. By clearing them out safely on purpose, controlled burns make room for fresh plants and keep future fires smaller and easier to control.",
+  "Remember, these burns are done by professionals. You should NEVER try to start a fire on your own because it is very dangerous and can cause a lot of harm.",
+  "Now it's your turn! Drag the edges of the box to select the zone you want to burn. Then press Select to start the controlled burn!",
 ];
 
 const ControlledBurnScene = ({ navigateTo, completeLevel }) => {
-  const [idx, setIdx] = useState(0);
-  const [showDlg, setShowDlg] = useState(true);
-  const [started, setStarted] = useState(false);
-  const [done, setDone] = useState([]);
-  const [wrong, setWrong] = useState(null);
-  const [stepFact, setStepFact] = useState(null);
-  const [burnPhase, setBurnPhase] = useState(0);
-  const [success, setSuccess] = useState(false);
+  // Phases: intro -> select -> burning -> success
+  const [phase, setPhase] = useState('intro');
+  const [introIdx, setIntroIdx] = useState(0);
 
-  const next = () => {
-    if (idx < DIALOGUES.length-1) setIdx(idx+1);
-    else { setShowDlg(false); setStarted(true); }
-  };
+  // Resizable box for zone selection
+  const [box, setBox] = useState({ x: 30, y: 25, width: 40, height: 50 });
+  const [dragging, setDragging] = useState(null);
+  const [burnTimer, setBurnTimer] = useState(0);
 
-  const clickStep = (stepId) => {
-    if (!started||done.includes(stepId)) return;
-    if (stepId===done.length) {
-      const newDone=[...done,stepId];
-      setDone(newDone);
-      setStepFact(STEPS[stepId]); setTimeout(()=>setStepFact(null),2500);
-      if (stepId===3) setBurnPhase(1);
-      if (stepId===5) { setBurnPhase(2); setTimeout(()=>{ setSuccess(true); completeLevel(SCENES.CONTROLLED_BURN); },800); }
-    } else {
-      setWrong(stepId); setTimeout(()=>setWrong(null),500);
-    }
-  };
+  const handleMouseDown = useCallback((handle, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(handle);
+  }, []);
 
-  const skyBg = burnPhase===1
-    ? 'linear-gradient(180deg,#FF8C42 0%,#FFB347 28%,#8BC34A 28%,#5a9e2f 55%,#3d7a1a 100%)'
-    : burnPhase===2
-    ? 'linear-gradient(180deg,#87CEEB 0%,#B8E4F7 28%,#6abf3a 28%,#4a9e2a 55%,#2d5a10 100%)'
-    : 'linear-gradient(180deg,#87CEEB 0%,#B8E4F7 28%,#8BC34A 28%,#5a9e2f 55%,#3d7a1a 100%)';
+  const handleMouseMove = useCallback((e) => {
+    if (!dragging) return;
+    const container = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - container.left) / container.width) * 100;
+    const py = ((e.clientY - container.top) / container.height) * 100;
+
+    setBox(prev => {
+      let { x, y, width, height } = prev;
+      const right = x + width;
+      const bottom = y + height;
+
+      if (dragging.includes('e')) { width = Math.max(10, px - x); }
+      if (dragging.includes('w')) { const newX = Math.min(px, right - 10); width = right - newX; x = newX; }
+      if (dragging.includes('s')) { height = Math.max(10, py - y); }
+      if (dragging.includes('n')) { const newY = Math.min(py, bottom - 10); height = bottom - newY; y = newY; }
+
+      x = Math.max(0, Math.min(x, 95));
+      y = Math.max(0, Math.min(y, 95));
+      width = Math.max(10, Math.min(width, 100 - x));
+      height = Math.max(10, Math.min(height, 100 - y));
+
+      return { x, y, width, height };
+    });
+  }, [dragging]);
+
+  const handleMouseUp = useCallback(() => setDragging(null), []);
+
+  // Burn timer — 8 seconds then transition to success
+  useEffect(() => {
+    if (phase !== 'burning') return;
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      setBurnTimer(elapsed);
+      if (elapsed >= 6) {
+        clearInterval(interval);
+        setPhase('success');
+        completeLevel(SCENES.CONTROLLED_BURN);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [phase, completeLevel]);
+
+  const handleSelect = () => setPhase('burning');
+
+  const handleStyle = (cursor) => ({
+    position: 'absolute', width: 18, height: 18,
+    background: '#FF3333', border: '2px solid white',
+    borderRadius: '50%', cursor, zIndex: 5,
+    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+  });
+
+  // Fire positions inside the selected zone
+  const firePositions = [
+    { x: 20, y: 25 }, { x: 50, y: 20 }, { x: 80, y: 30 },
+    { x: 30, y: 60 }, { x: 60, y: 55 }, { x: 75, y: 70 },
+    { x: 15, y: 75 }, { x: 50, y: 80 },
+  ];
 
   return (
-    <div style={{width:'100vw',height:'100vh',position:'relative',overflow:'hidden'}}>
-      <div style={{position:'absolute',inset:0,background:skyBg,transition:'background 1.5s ease'}}/>
-      <div style={{position:'absolute',top:'3%',right:'7%',fontSize:56,animation:'sunRays 4s ease-in-out infinite'}}>{burnPhase===1?'🌅':'☀️'}</div>
-      {[4,13,82,93].map((x,i)=>(
-        <div key={i} style={{position:'absolute',left:x+'%',top:'20%',fontSize:52+i*5,animation:'sway '+(3.5+i*0.4)+'s ease-in-out infinite',transformOrigin:'bottom center'}}>🌲</div>
-      ))}
-      <div style={{position:'absolute',left:'20%',right:'20%',top:'44%',height:'16%',background:burnPhase===0?'linear-gradient(180deg,#c8a84b,#a07830)':burnPhase===1?'linear-gradient(180deg,#FF4400,#CC2200)':'linear-gradient(180deg,#3d2508,#2a1a04)',borderRadius:12,border:'3px solid '+(burnPhase===1?'#FF6600':'#8B6914'),overflow:'hidden',transition:'all 1s ease',boxShadow:burnPhase===1?'0 0 40px rgba(255,100,0,0.6)':'none',display:'flex',alignItems:'flex-end',justifyContent:'space-around',padding:'0 10px 4px'}}>
-        {burnPhase===0&&Array.from({length:12},(_,i)=><div key={i} style={{fontSize:18,animation:'grassSway '+(1.5+i*0.1)+'s ease-in-out infinite',transformOrigin:'bottom center'}}>🌾</div>)}
-        {burnPhase===1&&Array.from({length:10},(_,i)=><div key={i} style={{fontSize:22+i*2,animation:'fireFlicker '+(0.2+i*0.05)+'s ease-in-out infinite'}}>🔥</div>)}
-        {burnPhase===2&&Array.from({length:8},(_,i)=><div key={i} style={{fontSize:18,animation:'float '+(2+i*0.3)+'s ease-in-out infinite'}}>🌱</div>)}
-      </div>
-      {burnPhase===1&&[0,1,2].map(i=>(
-        <div key={i} style={{position:'absolute',left:(35+i*8)+'%',top:'36%',fontSize:28+i*8,animation:'smokeDrift '+(1.5+i*0.4)+'s ease-in-out infinite',animationDelay:(i*0.3)+'s',opacity:0.65}}>💨</div>
-      ))}
-      {done.includes(1)&&burnPhase<2&&(
-        <div style={{position:'absolute',left:'16%',right:'16%',top:'40%',height:'24%',border:'4px dashed #FF9800',borderRadius:14,pointerEvents:'none',zIndex:9}}>
-          <div style={{position:'absolute',top:-13,left:'50%',transform:'translateX(-50%)',background:'#FF9800',color:'white',fontFamily:"'Fredoka One',cursive",fontSize:11,padding:'2px 10px',borderRadius:8}}>SAFETY ZONE</div>
+    <div
+      style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      {/* Background — dry plants for intro/select/burning, clean field for success */}
+      <img
+        src={phase === 'success' ? '/native-plants-field.png' : '/dryplantbg.png'}
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, transition: 'opacity 1s ease' }}
+      />
+
+      {/* Back button — previous phase */}
+      <BackButton onClick={() => {
+        if (phase === 'intro') navigateTo(SCENES.FIELD_MAP);
+        else if (phase === 'select') setPhase('intro');
+        else if (phase === 'burning') {} // can't go back during burn
+        else if (phase === 'success') setPhase('select');
+      }} />
+
+      {/* Home button */}
+      <HomeButton onClick={() => navigateTo(SCENES.FIELD_MAP)} />
+
+      {/* ═══ INTRO ═══ */}
+      {phase === 'intro' && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={160} />
+          <DialogueBox
+            text={INTRO_TEXTS[introIdx]}
+            onNext={() => {
+              if (introIdx < INTRO_TEXTS.length - 1) setIntroIdx(introIdx + 1);
+              else setPhase('select');
+            }}
+            onBack={introIdx > 0 ? () => setIntroIdx(introIdx - 1) : null}
+            showName={false}
+            style={{ maxWidth: 600, marginBottom: 16 }}
+          />
         </div>
       )}
-      {done.includes(2)&&(
-        <div style={{position:'absolute',left:'14%',top:'56%',display:'flex',gap:8,zIndex:12}}>
-          {[0,1,2].map(i=><div key={i} style={{fontSize:28,animation:'float '+(2+i*0.3)+'s ease-in-out infinite'}}>🪣</div>)}
-        </div>
-      )}
-      {done.includes(5)&&<div style={{position:'absolute',right:'12%',top:'53%',fontSize:50,animation:'slideInRight 0.6s ease',zIndex:12}}>🚒</div>}
-      {stepFact&&(
-        <div style={{position:'absolute',top:'28%',left:'50%',transform:'translate(-50%,-50%)',background:'rgba(22,65,12,0.97)',border:'4px solid #F5C518',borderRadius:22,padding:'18px 26px',textAlign:'center',zIndex:40,animation:'popIn 0.4s ease',maxWidth:280}}>
-          <div style={{fontSize:38,marginBottom:6}}>{stepFact.emoji}</div>
-          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:17,color:'#F5C518',marginBottom:6}}>Done! {stepFact.label}</div>
-          <p style={{fontFamily:"'Nunito',sans-serif",fontSize:13,color:'#a8e063',fontWeight:700,lineHeight:1.4,margin:0}}>{stepFact.desc}</p>
-        </div>
-      )}
-      {started&&(
-        <div style={{position:'absolute',top:12,left:'50%',transform:'translateX(-50%)',display:'flex',gap:8,zIndex:30,flexWrap:'wrap',justifyContent:'center',maxWidth:'90vw'}}>
-          {STEPS.map((step,i)=>{
-            const isDone=done.includes(step.id);
-            const isCurrent=step.id===done.length;
-            const isWrong=wrong===step.id;
-            return (
-              <div key={step.id} onClick={()=>clickStep(step.id)} style={{background:isDone?'linear-gradient(135deg,#4CAF50,#2E7D32)':isCurrent?step.color:'rgba(22,65,12,0.75)',border:'3px solid '+(isDone?'#1B5E20':isWrong?'#FF4444':isCurrent?step.color:'rgba(255,255,255,0.2)'),borderBottom:'5px solid '+(isDone?'#1B5E20':isWrong?'#FF4444':isCurrent?step.color:'rgba(0,0,0,0.3)'),borderRadius:13,padding:'8px 11px',cursor:'pointer',textAlign:'center',minWidth:86,transform:isWrong?'scale(0.95)':isCurrent?'scale(1.05)':'scale(1)',transition:'all 0.2s ease',animation:isWrong?'shake 0.4s ease':isCurrent?'pulse 1.5s ease infinite':'none',opacity:!isDone&&step.id>done.length?0.5:1}}>
-                <div style={{fontSize:20}}>{isDone?'✅':step.emoji}</div>
-                <div style={{fontFamily:"'Nunito',sans-serif",fontSize:10,fontWeight:800,color:'white',lineHeight:1.2,marginTop:3}}>{i+1}. {step.label}</div>
-                {isCurrent&&<div style={{fontFamily:"'Nunito',sans-serif",fontSize:9,fontWeight:800,color:'#FFE066',marginTop:2}}>DO THIS!</div>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <div style={{position:'absolute',top:started?108:14,right:14,background:'linear-gradient(135deg,#FF5722,#BF360C)',border:'3px solid #7F2700',borderRadius:14,padding:'8px 12px',zIndex:30,textAlign:'center',animation:'pulse 2s ease infinite',maxWidth:150}}>
-        <div style={{fontSize:18}}>⚠️</div>
-        <div style={{fontFamily:"'Nunito',sans-serif",fontSize:10,fontWeight:800,color:'white',lineHeight:1.3}}>PROFESSIONALS ONLY!</div>
-      </div>
-      {success&&(
-        <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50}}>
-          <div style={{background:'linear-gradient(135deg,#2d5a1b,#1a3a0a)',border:'5px solid #F5C518',borderRadius:28,padding:'36px 44px',textAlign:'center',animation:'popIn 0.5s ease',maxWidth:460}}>
-            <div style={{fontSize:64,marginBottom:8,animation:'bounce 1s ease infinite'}}>🔥</div>
-            <div style={{fontFamily:"'Fredoka One',cursive",fontSize:28,color:'#F5C518',marginBottom:10}}>Controlled Burn Done!</div>
-            <p style={{fontFamily:"'Nunito',sans-serif",fontSize:15,color:'#a8e063',fontWeight:700,lineHeight:1.6,marginBottom:12}}>The professionals safely cleared the old dead plants. New healthy plants can now grow!</p>
-            <div style={{background:'rgba(255,87,34,0.2)',border:'2px solid #FF5722',borderRadius:10,padding:'8px 14px',marginBottom:20}}>
-              <p style={{fontFamily:"'Nunito',sans-serif",fontSize:13,color:'#FF8A65',fontWeight:800,margin:0}}>Never try a controlled burn yourself. Always call trained professionals!</p>
+
+      {/* ═══ SELECT ZONE ═══ */}
+      {phase === 'select' && (
+        <>
+          {/* Instruction */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Select a zone to burn.
+              </p>
             </div>
-            <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{background:'linear-gradient(135deg,#F5C518,#E8A000)',border:'3px solid #8B6914',borderBottom:'6px solid #8B6914',borderRadius:18,padding:'12px 26px',fontFamily:"'Fredoka One',cursive",fontSize:18,color:'#1a1a1a',cursor:'pointer'}}>Back to Map</button>
           </div>
-        </div>
+
+          {/* Resizable zone box */}
+          <div style={{
+            position: 'absolute',
+            left: `${box.x}%`, top: `${box.y}%`,
+            width: `${box.width}%`, height: `${box.height}%`,
+            border: '3px dashed #333',
+            background: 'rgba(200,200,150,0.2)',
+            borderRadius: 4,
+            zIndex: 10,
+            transition: dragging ? 'none' : 'all 0.1s ease',
+          }}>
+            {/* Resize handles */}
+            <div onMouseDown={(e) => handleMouseDown('nw', e)} style={{ ...handleStyle('nw-resize'), top: -9, left: -9 }} />
+            <div onMouseDown={(e) => handleMouseDown('ne', e)} style={{ ...handleStyle('ne-resize'), top: -9, right: -9 }} />
+            <div onMouseDown={(e) => handleMouseDown('sw', e)} style={{ ...handleStyle('sw-resize'), bottom: -9, left: -9 }} />
+            <div onMouseDown={(e) => handleMouseDown('se', e)} style={{ ...handleStyle('se-resize'), bottom: -9, right: -9 }} />
+            <div onMouseDown={(e) => handleMouseDown('n', e)} style={{ ...handleStyle('n-resize'), top: -9, left: '50%', transform: 'translateX(-50%)' }} />
+            <div onMouseDown={(e) => handleMouseDown('s', e)} style={{ ...handleStyle('s-resize'), bottom: -9, left: '50%', transform: 'translateX(-50%)' }} />
+            <div onMouseDown={(e) => handleMouseDown('w', e)} style={{ ...handleStyle('w-resize'), left: -9, top: '50%', transform: 'translateY(-50%)' }} />
+            <div onMouseDown={(e) => handleMouseDown('e', e)} style={{ ...handleStyle('e-resize'), right: -9, top: '50%', transform: 'translateY(-50%)' }} />
+          </div>
+
+          {/* Select button */}
+          <button onClick={handleSelect} style={{
+            position: 'absolute', top: 70, left: 16, zIndex: 20,
+            background: '#FF3333', border: '3px solid #CC0000',
+            borderBottom: '6px solid #CC0000', borderRadius: 30,
+            padding: '10px 28px', fontFamily: "'Fredoka One',cursive",
+            fontSize: 18, color: 'white', cursor: 'pointer',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+          }}>Select</button>
+
+          {/* Next button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={handleSelect} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
+          </div>
+        </>
       )}
-      <button onClick={()=>navigateTo(SCENES.WORLD_MAP)} style={{position:'absolute',top:14,left:14,zIndex:30,background:'rgba(22,65,12,0.9)',border:'3px solid #F5C518',borderRadius:14,padding:'7px 16px',fontFamily:"'Fredoka One',cursive",fontSize:15,color:'#F5C518',cursor:'pointer'}}>Map</button>
-      <div style={{position:'absolute',bottom:14,left:14,display:'flex',alignItems:'flex-end',gap:12,zIndex:25}}>
-        <FirefighterCharacter size={110} speaking={showDlg} expression={idx===3?'surprised':'happy'}/>
-        {showDlg&&<DialogueBox text={DIALOGUES[idx]} onNext={next} style={{maxWidth:340,marginBottom:14}}/>}
-      </div>
+
+      {/* ═══ BURNING ═══ */}
+      {phase === 'burning' && (
+        <>
+          {/* Instruction stays */}
+          <div style={{ position: 'absolute', top: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, width: '90%', maxWidth: 700 }}>
+            <div style={{ background: 'white', border: '3px solid #1F93BA', borderRadius: 40, padding: '14px 32px', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.15)' }}>
+              <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 22, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                Burning in progress...
+              </p>
+            </div>
+          </div>
+
+          {/* Fire images flickering inside the zone */}
+          <div style={{
+            position: 'absolute',
+            left: `${box.x}%`, top: `${box.y}%`,
+            width: `${box.width}%`, height: `${box.height}%`,
+            zIndex: 10,
+            opacity: burnTimer < 5 ? 1 : Math.max(0, 1 - (burnTimer - 5)),
+            transition: 'opacity 1s ease',
+          }}>
+            {firePositions.map((pos, i) => (
+              <img
+                key={i}
+                src="/campfire-flame.png"
+                alt=""
+                style={{
+                  position: 'absolute',
+                  left: `${pos.x}%`, top: `${pos.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: '22%',
+                  objectFit: 'contain',
+                  animation: `fireFlicker ${0.3 + i * 0.05}s ease-in-out infinite`,
+                  transformOrigin: 'center bottom',
+                  filter: 'drop-shadow(0 4px 12px rgba(255,100,0,0.6))',
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{
+            position: 'absolute', bottom: '5%', left: '50%', transform: 'translateX(-50%)',
+            width: '60%', height: 20, background: 'rgba(0,0,0,0.3)', borderRadius: 10, zIndex: 20, overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${(burnTimer / 6) * 100}%`, height: '100%',
+              background: 'linear-gradient(90deg, #FF6600, #FF3300)',
+              borderRadius: 10, transition: 'width 0.1s linear',
+            }} />
+          </div>
+        </>
+      )}
+
+      {/* ═══ SUCCESS ═══ */}
+      {phase === 'success' && (
+        <>
+          {/* Blaze + success message */}
+          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+            <FirefighterCharacter size={160} />
+            <DialogueBox
+              text="Good work! You successfully cleared the dry plants and the land is safer!"
+              showNext={false}
+              showName={false}
+              style={{ maxWidth: 500, marginBottom: 16 }}
+            />
+          </div>
+
+          {/* Next button */}
+          <div style={{ position: 'absolute', bottom: '5%', right: '5%', zIndex: 20 }}>
+            <button onClick={() => navigateTo(SCENES.FIELD_MAP)} style={{
+              background: '#F819E7', border: '3px solid #BB10AE',
+              borderBottom: '6px solid #BB10AE', borderRadius: 30,
+              padding: '12px 36px', fontFamily: "'Fredoka One',cursive",
+              fontSize: 20, color: 'white', cursor: 'pointer',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+            }}>Next</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
+
 export default ControlledBurnScene;

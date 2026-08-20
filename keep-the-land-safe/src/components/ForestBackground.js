@@ -39,13 +39,13 @@ const ForestBackground = ({ style = {}, showPath = true, timeOfDay = 'day', show
       )}
 
       {/* Animated clouds layered on top */}
-      <div style={{ position: 'absolute', top: '5%', left: '4%', animation: 'cloudDrift 8s ease-in-out infinite alternate', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: '5%', left: '4%', animation: 'cloudDrift 4s ease-in-out infinite alternate', pointerEvents: 'none' }}>
         <Cloud width={130} />
       </div>
-      <div style={{ position: 'absolute', top: '3%', left: '46%', animation: 'cloudDrift 12s ease-in-out infinite alternate-reverse', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: '3%', left: '46%', animation: 'cloudDrift 6s ease-in-out infinite alternate-reverse', pointerEvents: 'none' }}>
         <Cloud width={100} />
       </div>
-      <div style={{ position: 'absolute', top: '6%', right: '8%', animation: 'cloudDrift 10s ease-in-out infinite alternate', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: '6%', right: '8%', animation: 'cloudDrift 5s ease-in-out infinite alternate', pointerEvents: 'none' }}>
         <Cloud width={150} />
       </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 const SceneTransition = ({ active, color }) => (
   <div style={{ position:'fixed', inset:0, backgroundColor:color||'#2d5a1b', zIndex:9999, pointerEvents:active?'all':'none', opacity:active?1:0, transition:'opacity 0.5s ease', display:'flex', alignItems:'center', justifyContent:'center' }}>
-    {active && <div style={{ fontSize:60, animation:'bounce 0.6s ease infinite' }}>🌿</div>}
+    {active && <div style={{ fontSize:60 }}></div>}
   </div>
 );
 export default SceneTransition;

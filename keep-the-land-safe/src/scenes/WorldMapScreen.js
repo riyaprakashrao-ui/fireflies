@@ -1,55 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ForestBackground from '../components/ForestBackground';
 import FirefighterCharacter from '../components/FirefighterCharacter';
 import DialogueBox from '../components/DialogueBox';
+import BackButton from '../components/BackButton';
+import MapButton from '../components/MapButton';
+import PlayButton from '../components/PlayButton';
 import { SCENES } from '../scenes';
 
 const LEVELS = [
-  { id: SCENES.FIREBREAK,       title: 'Firebreaks',      image: '/assets/Firebreak.png',     scale: '65%' },
-  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plants',   image: '/assets/Native Plant.png',  scale: '90%' },
-  { id: SCENES.GOATS,           title: 'Goats',           image: '/assets/Goat.png',           scale: '90%' },
-  { id: SCENES.CONTROLLED_BURN, title: 'Controlled Burn', image: '/assets/Fire.png',           scale: '55%' },
+  { id: SCENES.FIREBREAK,       title: 'Firebreaks',      image: '/assets/Firebreak.png',    scale: '65%' },
+  { id: SCENES.NATIVE_PLANTS,   title: 'Native Plants',   image: '/assets/NativePlant.png',  scale: '90%' },
+  { id: SCENES.GOATS,           title: 'Goats',           image: '/assets/Goat.png',         scale: '90%' },
+  { id: SCENES.CONTROLLED_BURN, title: 'Controlled Burn', image: '/assets/Fire.png',         scale: '55%' },
 ];
 
-const INTRO = [
+const INTRO_FIRST = [
   'Welcome to the Land Safety Map! Our forest needs your help!',
   'Wildfires spread fast through dry grass and dead plants. We need to protect our land!',
   'I will teach you 4 ways to keep the land safe. Click each area to learn and play!',
 ];
 
-const WorldMapScreen = ({ navigateTo, completedLevels }) => {
+const INTRO_RETURN = [
+  "Here's the Land Safety Map! Our forest needs your help!",
+  'Wildfires spread fast through dry grass and dead plants. We need to protect our land!',
+  'Click each area to learn and play!',
+];
+
+const WorldMapScreen = ({ navigateTo, completedLevels, completeGame }) => {
   const [idx, setIdx] = useState(0);
   const [showDlg, setShowDlg] = useState(true);
   const [hovered, setHovered] = useState(null);
+  const [wrapUp, setWrapUp] = useState(false);
 
-  const next = () => idx < INTRO.length - 1 ? setIdx(idx + 1) : setShowDlg(false);
+  const lines = completedLevels.length > 0 ? INTRO_RETURN : INTRO_FIRST;
+  const next = () => idx < lines.length - 1 ? setIdx(idx + 1) : setShowDlg(false);
   const allDone = LEVELS.every(l => completedLevels.includes(l.id));
+
+  useEffect(() => {
+    if (allDone && completeGame) completeGame(SCENES.FIELD_MAP);
+  }, [allDone, completeGame]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <ForestBackground showPath timeOfDay="day" />
+      {wrapUp ? (
+        <img
+          src="/frame2background.png"
+          alt=""
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom', zIndex: 0 }}
+        />
+      ) : (
+        <ForestBackground showPath timeOfDay="day" />
+      )}
+      <BackButton onClick={() => {
+        if (wrapUp) setWrapUp(false);
+        else navigateTo(SCENES.FIELD_INTRO);
+      }} />
+      <MapButton onClick={() => navigateTo(SCENES.MAIN_MAP)} />
 
+      {!wrapUp && (
+        <>
       {/* Title */}
       <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 20, textAlign: 'center' }}>
-        <div style={{ background: 'rgba(22,65,12,0.95)', border: '4px solid #F5C518', borderRadius: 22, padding: '10px 32px', boxShadow: '0 6px 24px rgba(0,0,0,0.4)' }}>
-          <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: 28, color: '#F5C518' }}>Land Safety Map</div>
-          <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 13, color: '#a8e063', fontWeight: 800 }}>
+        <div style={{ background: 'white', border: '4px solid #1F93BA', borderRadius: 22, padding: '10px 32px', boxShadow: '0 6px 24px rgba(0,0,0,0.2)' }}>
+          <div style={{ fontFamily: "'Fugaz One',cursive", fontSize: 28, color: '#1a1a1a' }}>Land Safety Map</div>
+          <div style={{ fontFamily: "'Figtree',sans-serif", fontSize: 13, color: '#239622', fontWeight: 800 }}>
             {completedLevels.length}/{LEVELS.length} areas protected!
           </div>
         </div>
       </div>
 
-      {/* Stars */}
-      <div style={{ position: 'absolute', top: 88, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, zIndex: 20 }}>
-        {LEVELS.map((l, i) => (
-          <span key={i} style={{ fontSize: 26, filter: completedLevels.includes(l.id) ? 'none' : 'grayscale(1) opacity(0.35)' }}>⭐</span>
-        ))}
-      </div>
+
 
       {/* Level cards — 4 in a single row */}
       <div style={{
         position: 'absolute',
-        top: '50%',
+        top: '42%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
         display: 'flex',
@@ -124,8 +149,8 @@ const WorldMapScreen = ({ navigateTo, completedLevels }) => {
                   {level.title}
                 </div>
                 {done
-                  ? <span style={{ fontSize: 20 }}>✅</span>
-                  : <span style={{ fontSize: 14, fontFamily: "'Nunito',sans-serif", fontWeight: 800, color: '#FFD23F', background: '#1a1a1a', padding: '3px 10px', borderRadius: 20 }}>PLAY →</span>
+                  ? <span style={{ fontSize: 14, fontFamily: "'Nunito',sans-serif", fontWeight: 800, color: 'white', background: '#1F93BA', padding: '3px 10px', borderRadius: 20 }}>DONE</span>
+                  : <span style={{ fontSize: 14, fontFamily: "'Nunito',sans-serif", fontWeight: 800, color: 'white', background: '#F819E7', padding: '3px 10px', borderRadius: 20 }}>PLAY →</span>
                 }
               </div>
 
@@ -133,10 +158,10 @@ const WorldMapScreen = ({ navigateTo, completedLevels }) => {
               {done && (
                 <div style={{
                   position: 'absolute', inset: 0,
-                  background: 'rgba(76,175,80,0.15)',
+                  background: 'rgba(31,147,186,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 14,
                 }}>
-                  <div style={{ fontSize: 56, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }}>⭐</div>
                 </div>
               )}
             </div>
@@ -144,15 +169,17 @@ const WorldMapScreen = ({ navigateTo, completedLevels }) => {
         })}
       </div>
 
-      {/* Victory button */}
+      {/* Next after all 4 are done */}
       {allDone && (
         <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 30 }}>
-          <button
-            onClick={() => navigateTo(SCENES.VICTORY, '#F5C518')}
-            style={{ background: 'linear-gradient(135deg,#F5C518,#E8A000)', border: '4px solid #8B6914', borderBottom: '7px solid #8B6914', borderRadius: 22, padding: '14px 28px', fontFamily: "'Fredoka One',cursive", fontSize: 20, color: '#1a1a1a', cursor: 'pointer', animation: 'pulse 1.5s ease infinite' }}
-          >
-            See Your Results! 🏆
-          </button>
+          <PlayButton
+            label="Next"
+            size="medium"
+            color="#F819E7"
+            borderColor="#BB10AE"
+            textColor="white"
+            onClick={() => setWrapUp(true)}
+          />
         </div>
       )}
 
@@ -160,9 +187,25 @@ const WorldMapScreen = ({ navigateTo, completedLevels }) => {
       <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
         <FirefighterCharacter size={120} speaking={showDlg} expression="happy" />
         {showDlg && (
-          <DialogueBox text={INTRO[idx]} onNext={next} style={{ maxWidth: 340, marginBottom: 16 }} />
+          <DialogueBox text={lines[idx]} onNext={next} showName={false} style={{ maxWidth: 340, marginBottom: 16 }} />
         )}
       </div>
+        </>
+      )}
+
+      {wrapUp && (
+        <div style={{ position: 'absolute', bottom: '5%', left: '3%', display: 'flex', alignItems: 'flex-end', gap: 14, zIndex: 25 }}>
+          <FirefighterCharacter size={200} />
+          <DialogueBox
+            text="Great job! You learned how to keep the land safe. Let's head back to the map to see what else we can learn."
+            onNext={() => navigateTo(SCENES.MAIN_MAP)}
+            showName={false}
+            style={{ maxWidth: 480, marginBottom: 20 }}
+          />
+        </div>
+      )}
+
+
     </div>
   );
 };
